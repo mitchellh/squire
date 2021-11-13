@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -34,9 +35,25 @@ type Config struct {
 // files or directories prefixed with "NN-" where NN is numeric. Within
 // the directories, files do NOT have to be prefixed.
 func Build(cfg *Config) error {
+	if cfg.FS == nil {
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		cfg.FS = os.DirFS(wd)
+	}
+	if cfg.Root == "" {
+		cfg.Root = "sql"
+	}
 	if cfg.Logger == nil {
 		// TODO: null logger default
 		cfg.Logger = hclog.L()
+	}
+
+	_, err := fs.Stat(cfg.FS, cfg.Root)
+	if err != nil {
+		panic(err)
 	}
 
 	// Shorthand cause we log a lot
@@ -62,7 +79,9 @@ func Build(cfg *Config) error {
 			// check the format of files/directories if it is an
 			// immediate child.
 			dir, file := filepath.Split(p)
+			dir = filepath.Clean(dir)
 			child := dir == cfg.Root
+			log.Trace("dir and file split", "dir", dir, "file", file)
 
 			// If we are a child, let's verify we care about this.
 			if child && !reNumPrefix.MatchString(file) {
