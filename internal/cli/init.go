@@ -32,7 +32,7 @@ func (c *InitCommand) Synopsis() string {
 
 func (c *InitCommand) Help() string {
 	return formatHelp(`
-Usage: waypoint init [options]
+Usage: squire init [options]
 
   Initialize a new project for Squire.
 

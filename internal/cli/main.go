@@ -24,7 +24,7 @@ func Main(args []string) int {
 	// Get our version
 	vsn := version.Info()
 
-	// NOTE: This is only for running `waypoint -v` and expecting it to return
+	// NOTE: This is only for running `squire -v` and expecting it to return
 	// a version. Any other subcommand will expect `-v` to be around verbose
 	// logging rather than printing a version
 	if len(args) == 2 && args[1] == "-v" {
@@ -61,7 +61,7 @@ func Main(args []string) int {
 
 	// Copy the CLI to check if it is a version call. If so, we modify
 	// the args to just be the version subcommand. This ensures that
-	// --version behaves by calling `waypoint version` and we get consistent
+	// --version behaves by calling `squire version` and we get consistent
 	// behavior.
 	cli := cliFactory()
 	if cli.IsVersion() {
