@@ -25,13 +25,15 @@ func (c *SchemaCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 
-	// Determine our directory
+	// Determine our directory. We want an absolute directory so we can
+	// put together the fs.FS implementation.
 	sqlDir, err := filepath.Abs(c.sqlDir)
 	if err != nil {
 		return c.exitError(fmt.Errorf("Error expanding sql directory: %w", err))
 	}
 	rootDir, rootFile := filepath.Split(sqlDir)
 	if len(rootDir) > 0 && rootDir[len(rootDir)-1] == filepath.Separator {
+		// Strip the trailining filepath separator.
 		rootDir = rootDir[:len(rootDir)-1]
 	}
 
