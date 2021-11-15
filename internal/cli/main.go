@@ -97,6 +97,12 @@ func Commands(
 			}, nil
 		},
 
+		"schema": func() (cli.Command, error) {
+			return &SchemaCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
 		"version": func() (cli.Command, error) {
 			return &VersionCommand{
 				baseCommand: baseCommand,

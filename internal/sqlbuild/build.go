@@ -51,11 +51,6 @@ func Build(cfg *Config) error {
 		cfg.Logger = hclog.L()
 	}
 
-	_, err := fs.Stat(cfg.FS, cfg.Root)
-	if err != nil {
-		panic(err)
-	}
-
 	// Shorthand cause we log a lot
 	L := cfg.Logger
 	L.Info("building SQL", "root", cfg.Root)

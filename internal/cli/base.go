@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/mitchellh/squire/internal/pkg/flag"
@@ -56,6 +58,31 @@ func (c *baseCommand) Init(opts ...Option) error {
 
 	return nil
 }
+
+// exitError should be called by commands to exit with an error.
+func (c *baseCommand) exitError(err error) int {
+	fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+	return 1
+}
+
+// flagSet creates the flags for this command. The callback should be used
+// to configure the set with your own custom options.
+func (c *baseCommand) flagSet(bit flagSetBit, f func(*flag.Sets)) *flag.Sets {
+	set := flag.NewSets()
+
+	if f != nil {
+		f(set)
+	}
+
+	return set
+}
+
+// flagSetBit is used with baseCommand.flagSet
+type flagSetBit uint
+
+const (
+	flagSetDefault flagSetBit = 1 << iota
+)
 
 // Option is used to configure Init on baseCommand.
 type Option func(c *baseConfig)
