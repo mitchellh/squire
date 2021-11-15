@@ -10,79 +10,47 @@ var (
 	GitCommit   string
 	GitDescribe string
 
-	Version           = "0.1.0"
-	VersionPrerelease = ""
-	VersionMetadata   = ""
+	// Version information. This can be manually set or filled in via
+	// compiler flags.
+	Version = "0.1.0"
+
+	// This will be initialized by the package.
+	info *VersionInfo
 )
 
-// VersionInfo
+// Info is a struct that contains all our version information. This
+// is more or less the same information (or derived information) from
+// the global variables in this package, but having it as a struct lets
+// us more easily pass it around, serialize it, etc.
 type VersionInfo struct {
-	Revision          string
-	Version           string
-	VersionPrerelease string
-	VersionMetadata   string
-	GitDescribe       string
+	Revision    string
+	Version     string
+	GitDescribe string
 }
 
-func GetVersion() *VersionInfo {
-	ver := Version
-	rel := VersionPrerelease
-	md := VersionMetadata
-	desc := GitDescribe
-	if desc != "" {
-		ver = desc
-	} else {
-		ver = fmt.Sprintf("v%s", ver)
-	}
-	if desc == "" && rel == "" && VersionPrerelease != "" {
-		rel = "dev"
-	}
+// Info returns the current binary version info.
+func Info() *VersionInfo {
+	return info
+}
 
-	return &VersionInfo{
-		Revision:          GitCommit,
-		Version:           ver,
-		VersionPrerelease: rel,
-		VersionMetadata:   md,
-		GitDescribe:       desc,
+func init() {
+	info = &VersionInfo{
+		Revision:    GitCommit,
+		Version:     Version,
+		GitDescribe: GitDescribe,
 	}
 }
 
-func (c *VersionInfo) VersionNumber() string {
-	if Version == "unknown" && VersionPrerelease == "unknown" {
-		return "(version unknown)"
-	}
-
-	version := c.Version
-
-	if c.VersionPrerelease != "" && c.GitDescribe == "" {
-		version = fmt.Sprintf("%s-%s", c.Version, c.VersionPrerelease)
-	}
-
-	if c.VersionMetadata != "" {
-		version = fmt.Sprintf("%s+%s", c.Version, c.VersionMetadata)
-	}
-
-	return version
-}
-
-func (c *VersionInfo) FullVersionNumber(rev bool) string {
+func (v *VersionInfo) String() string {
 	var versionString bytes.Buffer
 
-	if Version == "unknown" && VersionPrerelease == "unknown" {
-		return "Squire (version unknown)"
+	if v.Version == "" {
+		return "version unknown"
 	}
 
-	fmt.Fprintf(&versionString, "%s", c.Version)
-	if c.VersionPrerelease != "" && c.GitDescribe == "" {
-		fmt.Fprintf(&versionString, "-%s", c.VersionPrerelease)
-	}
-
-	if c.VersionMetadata != "" {
-		fmt.Fprintf(&versionString, "+%s", c.VersionMetadata)
-	}
-
-	if rev && c.Revision != "" {
-		fmt.Fprintf(&versionString, " (%s)", c.Revision)
+	fmt.Fprintf(&versionString, "%s", v.Version)
+	if v.Revision != "" {
+		fmt.Fprintf(&versionString, " (%s)", v.Revision)
 	}
 
 	return versionString.String()

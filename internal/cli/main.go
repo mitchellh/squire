@@ -22,7 +22,7 @@ const (
 // The arguments SHOULD include argv[0] as the program name.
 func Main(args []string) int {
 	// Get our version
-	vsn := version.GetVersion()
+	vsn := version.Info()
 
 	// NOTE: This is only for running `waypoint -v` and expecting it to return
 	// a version. Any other subcommand will expect `-v` to be around verbose
@@ -51,7 +51,7 @@ func Main(args []string) int {
 		return &cli.CLI{
 			Name:                       args[0],
 			Args:                       args[1:],
-			Version:                    vsn.FullVersionNumber(true),
+			Version:                    vsn.String(),
 			Commands:                   commands,
 			Autocomplete:               true,
 			AutocompleteNoDefaultFlags: true,
@@ -93,6 +93,12 @@ func Commands(
 	commands := map[string]cli.CommandFactory{
 		"init": func() (cli.Command, error) {
 			return &InitCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
+		"version": func() (cli.Command, error) {
+			return &VersionCommand{
 				baseCommand: baseCommand,
 			}, nil
 		},
