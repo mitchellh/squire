@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 )
@@ -54,6 +55,12 @@ func Build(cfg *Config) error {
 	// Shorthand cause we log a lot
 	L := cfg.Logger
 	L.Info("building SQL", "root", cfg.Root)
+
+	// Write our header
+	_, err := fmt.Fprintf(cfg.Output, header, time.Now().Format(time.UnixDate))
+	if err != nil {
+		return err
+	}
 
 	return fs.WalkDir(cfg.FS, cfg.Root,
 		func(p string, d fs.DirEntry, err error) error {
@@ -131,8 +138,14 @@ func Build(cfg *Config) error {
 
 var reNumPrefix = regexp.MustCompile(`^\d\d-`)
 
-const flowerBox = `
+const (
+	flowerBox = `
 ---------------------------------------------------------------------
 -- File: %s
 ---------------------------------------------------------------------
 `
+
+	header = `-- This file is auto-generated. DO NOT EDIT.
+-- Generated at: %s
+`
+)
