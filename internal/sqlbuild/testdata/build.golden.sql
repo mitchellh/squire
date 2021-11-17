@@ -1,3 +1,4 @@
+-- This file is auto-generated. DO NOT EDIT.
 
 ---------------------------------------------------------------------
 -- File: build/00-schema/schema.sql

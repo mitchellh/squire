@@ -38,3 +38,18 @@ func TestBuild(t *testing.T) {
 		})
 	}
 }
+
+func TestBuild_noExist(t *testing.T) {
+	var buf bytes.Buffer
+	require.Error(t, Build(&Config{
+		Output: &buf,
+		FS:     os.DirFS("testdata"),
+		Root:   "thisdoesntexist",
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Level: hclog.Debug,
+		}),
+	}))
+
+	// On error, we should not output anything
+	require.Empty(t, buf.String())
+}

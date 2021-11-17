@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
-	"time"
 
 	"github.com/hashicorp/go-hclog"
 )
@@ -26,6 +26,9 @@ type Config struct {
 	// to begin walking to find all SQL files.
 	FS   fs.FS
 	Root string
+
+	// Metadata is added at the beginning of the file in a SQL comment.
+	Metadata map[string]string
 
 	// Logger
 	Logger hclog.Logger
@@ -56,11 +59,10 @@ func Build(cfg *Config) error {
 	L := cfg.Logger
 	L.Info("building SQL", "root", cfg.Root)
 
-	// Write our header
-	_, err := fmt.Fprintf(cfg.Output, header, time.Now().Format(time.UnixDate))
-	if err != nil {
-		return err
-	}
+	// We want to write our header exactly once. We don't write it here
+	// because we want the header to not be written if there is an immediate
+	// error reading files or if there is no output at all.
+	wroteHeader := false
 
 	return fs.WalkDir(cfg.FS, cfg.Root,
 		func(p string, d fs.DirEntry, err error) error {
@@ -119,6 +121,31 @@ func Build(cfg *Config) error {
 			}
 			defer f.Close()
 
+			// Write our header for the whole file
+			if !wroteHeader {
+				// Write our first header
+				_, err := fmt.Fprintf(cfg.Output, header)
+				if err != nil {
+					return err
+				}
+
+				// Write our metadata
+				var keys []string
+				for k := range cfg.Metadata {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				for _, k := range keys {
+					v := cfg.Metadata[k]
+					_, err := fmt.Fprintf(cfg.Output, "-- %s: %s\n", k, v)
+					if err != nil {
+						return err
+					}
+				}
+
+				wroteHeader = true
+			}
+
 			// Write our filename so its easier to find merged content.
 			if _, err := fmt.Fprintf(cfg.Output, flowerBox, p); err != nil {
 				log.Warn("error writing file header", "err", err)
@@ -146,6 +173,5 @@ const (
 `
 
 	header = `-- This file is auto-generated. DO NOT EDIT.
--- Generated at: %s
 `
 )

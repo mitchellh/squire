@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/posener/complete"
 
@@ -64,6 +65,9 @@ func (c *SchemaCommand) Run(args []string) int {
 		FS:     os.DirFS(rootDir),
 		Root:   rootFile,
 		Logger: c.Log.Named("sqlbuild"),
+		Metadata: map[string]string{
+			"Generation Time": time.Now().Format(time.UnixDate),
+		},
 	}); err != nil {
 		return c.exitError(err)
 	}
