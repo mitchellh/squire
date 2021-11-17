@@ -79,6 +79,9 @@ func newConfig(opts ...Option) (*config, error) {
 	return &cfg, nil
 }
 
+// apiService returns the compose api.Service implementation so that
+// lifecycle operations such as Up, Down, etc. can start being called
+// on the project.
 func (c *config) apiService() (api.Service, error) {
 	// Initialize the docker CLI 💀. The compose library needs this to operate.
 	cli, err := dockercommand.NewDockerCli()
