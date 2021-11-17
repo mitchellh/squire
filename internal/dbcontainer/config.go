@@ -6,6 +6,10 @@ import (
 	"github.com/cockroachdb/errors"
 	composecli "github.com/compose-spec/compose-go/cli"
 	"github.com/compose-spec/compose-go/types"
+	dockercommand "github.com/docker/cli/cli/command"
+	dockercliflags "github.com/docker/cli/cli/flags"
+	"github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/hashicorp/go-hclog"
 )
 
@@ -73,6 +77,22 @@ func newConfig(opts ...Option) (*config, error) {
 	}
 
 	return &cfg, nil
+}
+
+func (c *config) apiService() (api.Service, error) {
+	// Initialize the docker CLI 💀. The compose library needs this to operate.
+	cli, err := dockercommand.NewDockerCli()
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Initialize(dockercliflags.NewClientOptions()); err != nil {
+		return nil, err
+	}
+
+	return compose.NewComposeService(
+		cli.Client(),
+		cli.ConfigFile(),
+	), nil
 }
 
 // service returns the service configuration for the service representing

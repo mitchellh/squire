@@ -1,10 +1,12 @@
 package dbcontainer
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	//"github.com/davecgh/go-spew/spew"
+	apipkg "github.com/docker/compose/v2/pkg/api"
 )
 
 func TestFromComposeFile(t *testing.T) {
@@ -27,4 +29,10 @@ func TestFromComposeFile(t *testing.T) {
 	port, err := cfg.pgPort(svc)
 	require.NoError(err)
 	require.Equal(uint32(1234), port)
+
+	// Try api service
+	api, err := cfg.apiService()
+	require.NoError(err)
+
+	require.NoError(api.Up(context.Background(), cfg.Project, apipkg.UpOptions{}))
 }
