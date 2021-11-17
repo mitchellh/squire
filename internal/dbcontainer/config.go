@@ -1,6 +1,8 @@
 package dbcontainer
 
 import (
+	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/cockroachdb/errors"
@@ -137,9 +139,61 @@ func (c *config) pgPort(svc *types.ServiceConfig) (uint32, error) {
 	)
 }
 
+// pgDB determines the database name.
+func (c *config) pgDB(svc *types.ServiceConfig) (string, error) {
+	// First load from our extension
+	ext, err := parseExtension(svc)
+	if err != nil {
+		return "", err
+	}
+	if ext.DB != "" {
+		return ext.DB, nil
+	}
+
+	// Get the DB from env vars
+	if len(svc.Environment) > 0 {
+		v, ok := svc.Environment[pgDBEnv]
+		if ok && v != nil {
+			return *v, nil
+		}
+	}
+
+	return "", errors.WithDetailf(
+		errors.Newf("failed to determine PostgreSQL database name for service %q", svc.Name),
+		strings.TrimSpace(errDetailNoDB),
+		svc.Name,
+	)
+}
+
+// connURI determines the connection URI.
+func (c *config) connURI(svc *types.ServiceConfig) (string, error) {
+	// Determine our port
+	pgPort, err := c.pgPort(svc)
+	if err != nil {
+		return "", err
+	}
+
+	// Determine our database name
+	pgDB, err := c.pgDB(svc)
+	if err != nil {
+		return "", err
+	}
+
+	var u url.URL
+	u.Scheme = "postgres"
+	u.Host = fmt.Sprintf("localhost:%d", pgPort)
+	u.User = url.User("postgres")
+	u.Path = pgDB
+
+	return u.String(), nil
+}
+
 const (
 	// pgDefaultPort is the port for the PostgreSQL database.
 	pgDefaultPort = 5432
+
+	// pgDBEnv is the env var in the container that specifies the DB name.
+	pgDBEnv = "POSTGRES_DB"
 )
 
 const (
@@ -151,6 +205,21 @@ Please fix this by introducing the database service:
 services:
   %[1]s:
     ...
+`
+
+	errDetailNoDB = `
+Squire needs to know the name of the database within PostgreSQL to use.
+TODO
+`
+
+	errDetailDBString = `
+The database name specified by the "x-squire.db" field must be a string.
+For example:
+
+services:
+  %[1]s:
+    x-squire:
+      db: "my-db"
 `
 
 	errDetailNoPort = `
