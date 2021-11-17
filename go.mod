@@ -7,9 +7,12 @@ require (
 	github.com/compose-spec/compose-go v1.0.5
 	github.com/docker/cli v20.10.7+incompatible
 	github.com/docker/compose/v2 v2.1.1
+	github.com/docker/docker v20.10.7+incompatible
 	github.com/hashicorp/go-hclog v1.0.0
 	github.com/kr/text v0.2.0
+	github.com/lib/pq v1.10.4
 	github.com/mitchellh/cli v1.1.2
+	github.com/mitchellh/mapstructure v1.4.2
 	github.com/posener/complete v1.2.3
 	github.com/sebdah/goldie/v2 v2.5.3
 	github.com/stretchr/testify v1.7.0
@@ -42,7 +45,6 @@ require (
 	github.com/distribution/distribution/v3 v3.0.0-20210316161203-a01c71e2477e // indirect
 	github.com/docker/buildx v0.5.2-0.20210422185057-908a856079fc // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.7+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4-0.20210125172408-38bea2ce277a // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -83,7 +85,6 @@ require (
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/miekg/pkcs11 v1.0.3 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
 	github.com/moby/buildkit v0.8.2-0.20210401015549-df49b648c8bf // indirect
 	github.com/moby/locker v1.0.1 // indirect

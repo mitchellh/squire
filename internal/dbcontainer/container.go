@@ -13,6 +13,7 @@ type Container struct {
 	compose composeapi.Service
 	project *types.Project
 	service *types.ServiceConfig
+	connURI string
 }
 
 // New creates a new Container instance to represent a new or existing
@@ -38,13 +39,17 @@ func New(opts ...Option) (*Container, error) {
 
 	// Determine our pg connection information we'd use if the container
 	// is running (we don't know or care at this point what the status is).
-	// TODO
+	connURI, err := cfg.connURI(svc)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Container{
 		logger:  cfg.Logger,
 		compose: compose,
 		project: cfg.Project,
 		service: svc,
+		connURI: connURI,
 	}, nil
 }
 
@@ -54,7 +59,7 @@ func New(opts ...Option) (*Container, error) {
 // reported then. Note its still possible for the connection itself to fail
 // if the container isn't running, invalid information was provided, etc.
 func (c *Container) ConnURI() string {
-	return ""
+	return c.connURI
 }
 
 // Up starts the container. If it is already running, this does nothing.
