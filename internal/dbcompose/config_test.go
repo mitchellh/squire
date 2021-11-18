@@ -3,8 +3,8 @@ package dbcompose
 import (
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/require"
-	//"github.com/davecgh/go-spew/spew"
 )
 
 func TestBasic(t *testing.T) {
@@ -15,6 +15,8 @@ func TestBasic(t *testing.T) {
 		WithPath("testdata/compose-v2.yml"),
 	)
 	require.NoError(err)
+
+	spew.Dump(cfg.project)
 
 	// Verify our URI
 	require.Equal("postgres://postgres@localhost:1234/app-dev", cfg.ConnURI())
