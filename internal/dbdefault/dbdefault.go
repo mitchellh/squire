@@ -20,7 +20,12 @@ func Project() *types.Project {
 	}
 
 	return &types.Project{
-		Name:       filepath.Base(wd),
+		// Name is our working directory plus a default suffix. We add the
+		// suffix because if a user later adds their own docker-compose then
+		// this will conflict. We want to be able to detect a default project
+		// still running.
+		Name: filepath.Base(wd) + "-default",
+
 		WorkingDir: wd,
 		Services: []types.ServiceConfig{
 			{
