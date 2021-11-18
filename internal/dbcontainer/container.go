@@ -3,17 +3,17 @@ package dbcontainer
 import (
 	"context"
 
-	"github.com/compose-spec/compose-go/types"
 	composeapi "github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/hashicorp/go-hclog"
+
+	"github.com/mitchellh/squire/internal/dbcompose"
 )
 
 type Container struct {
 	logger  hclog.Logger
 	compose composeapi.Service
-	project *types.Project
-	service *types.ServiceConfig
-	connURI string
+	config  *dbcompose.Config
 }
 
 // New creates a new Container instance to represent a new or existing
@@ -25,31 +25,17 @@ func New(opts ...Option) (*Container, error) {
 		return nil, err
 	}
 
-	// Grab our API service so we can make lifecycle operations happen
-	compose, err := cfg.apiService()
+	// Initialize our API service so we can run compose lifecycle ops
+	dockerCli, err := dockerCli()
 	if err != nil {
 		return nil, err
 	}
-
-	// Grab our primary service
-	svc, err := cfg.service()
-	if err != nil {
-		return nil, err
-	}
-
-	// Determine our pg connection information we'd use if the container
-	// is running (we don't know or care at this point what the status is).
-	connURI, err := cfg.connURI(svc)
-	if err != nil {
-		return nil, err
-	}
+	api := compose.NewComposeService(dockerCli.Client(), dockerCli.ConfigFile())
 
 	return &Container{
 		logger:  cfg.Logger,
-		compose: compose,
-		project: cfg.Project,
-		service: svc,
-		connURI: connURI,
+		compose: api,
+		config:  cfg.ComposeConfig,
 	}, nil
 }
 
@@ -59,15 +45,15 @@ func New(opts ...Option) (*Container, error) {
 // reported then. Note its still possible for the connection itself to fail
 // if the container isn't running, invalid information was provided, etc.
 func (c *Container) ConnURI() string {
-	return c.connURI
+	return c.config.ConnURI()
 }
 
 // Up starts the container. If it is already running, this does nothing.
 func (c *Container) Up(ctx context.Context) error {
-	c.logger.Info("up", "service", c.service.Name)
-	return c.compose.Up(ctx, c.project, composeapi.UpOptions{
+	c.logger.Info("up", "service", c.config.Service())
+	return c.compose.Up(ctx, c.config.Project(), composeapi.UpOptions{
 		Create: composeapi.CreateOptions{
-			Services: []string{c.service.Name},
+			Services: []string{c.config.Service()},
 		},
 
 		Start: composeapi.StartOptions{},
@@ -78,9 +64,10 @@ func (c *Container) Up(ctx context.Context) error {
 // Note that this will destroy ALL services in the docker-compose project,
 // we have no way to filter that out.
 func (c *Container) Down(ctx context.Context) error {
-	c.logger.Info("down", "project", c.project.Name)
-	return c.compose.Down(ctx, c.project.Name, composeapi.DownOptions{
-		Project: c.project,
+	p := c.config.Project()
+	c.logger.Info("down", "project", p.Name)
+	return c.compose.Down(ctx, p.Name, composeapi.DownOptions{
+		Project: p,
 		Volumes: true,
 	})
 }

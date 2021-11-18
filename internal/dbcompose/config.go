@@ -84,6 +84,16 @@ func New(opts ...Option) (*Config, error) {
 	return cfg, nil
 }
 
+// Project returns the project for this config.
+func (c *Config) Project() *types.Project {
+	return c.project
+}
+
+// Service returns the service name that is being used.
+func (c *Config) Service() string {
+	return c.service.Name
+}
+
 // ConnURI is a URI for connecting to PostgreSQL. This should be able to
 // be used with most PostgreSQL clients.
 func (c *Config) ConnURI() string {

@@ -7,3 +7,4 @@ services:
         environment:
             - POSTGRES_DB=app-dev
             - POSTGRES_HOST_AUTH_METHOD=trust
+        x-squire: {}
