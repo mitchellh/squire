@@ -6,6 +6,10 @@ import (
 	"os"
 
 	"github.com/hashicorp/go-hclog"
+
+	"github.com/mitchellh/squire/internal/dbcompose"
+	"github.com/mitchellh/squire/internal/dbcontainer"
+	"github.com/mitchellh/squire/internal/dbdefault"
 	"github.com/mitchellh/squire/internal/pkg/flag"
 )
 
@@ -63,6 +67,28 @@ func (c *baseCommand) Init(opts ...Option) error {
 func (c *baseCommand) exitError(err error) int {
 	fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 	return 1
+}
+
+// container returns the container representing our development database.
+func (c *baseCommand) container() (*dbcontainer.Container, error) {
+	// Look for a docker compose yaml file in parent directories
+	// TODO
+
+	// Build our config
+	cfg, err := dbcompose.New(
+		dbcompose.WithLogger(c.Log.Named("compose")),
+		dbcompose.WithDefault(dbdefault.Project()),
+		dbcompose.WithPath("docker-compose.yml"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build our container
+	return dbcontainer.New(
+		dbcontainer.WithLogger(c.Log.Named("container")),
+		dbcontainer.WithCompose(cfg),
+	)
 }
 
 // flagSet creates the flags for this command. The callback should be used

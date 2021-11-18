@@ -103,6 +103,18 @@ func Commands(
 			}, nil
 		},
 
+		"up": func() (cli.Command, error) {
+			return &UpCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
+		"down": func() (cli.Command, error) {
+			return &DownCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
 		"version": func() (cli.Command, error) {
 			return &VersionCommand{
 				baseCommand: baseCommand,
