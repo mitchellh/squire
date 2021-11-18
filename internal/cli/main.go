@@ -103,6 +103,12 @@ func Commands(
 			}, nil
 		},
 
+		"console": func() (cli.Command, error) {
+			return &ConsoleCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
 		"up": func() (cli.Command, error) {
 			return &UpCommand{
 				baseCommand: baseCommand,
