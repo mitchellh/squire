@@ -1,0 +1,10 @@
+version: '2'
+services:
+    db:
+        image: "postgres:13.4"
+        ports:
+            - "1234:5432"
+        environment:
+            - POSTGRES_DB=app-dev
+            - POSTGRES_HOST_AUTH_METHOD=trust
+        x-squire: {}

@@ -38,6 +38,14 @@ func WithComposeFile(path string) Option {
 	}
 }
 
+// WithComposeProject specifies an exact compose project to use.
+func WithComposeProject(v *types.Project) Option {
+	return func(dst *config) error {
+		dst.Project = v
+		return nil
+	}
+}
+
 // WithService is the service name in the compose specification to use
 // as the template for launching the database.
 func WithService(n string) Option {
