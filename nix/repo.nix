@@ -3,6 +3,7 @@
     name = "squire";
 
     buildInputs = [
+      pkgs.cue
       pkgs.go_1_17
       pkgs.docker-compose
       pkgs.postgresql_13
