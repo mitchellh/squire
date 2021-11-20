@@ -39,6 +39,21 @@ func New(opts ...Option) (*Container, error) {
 	}, nil
 }
 
+// Clone clones the container settings. This does not copy any data.
+// This does not create or start the cloned container.
+func (c *Container) Clone(n string) (*Container, error) {
+	cfg2, err := c.config.Clone(n)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Container{
+		logger:  c.logger,
+		compose: c.compose,
+		config:  cfg2,
+	}, nil
+}
+
 // ConnURI returns the connection string in URI format. This can be used
 // with most PostgreSQL API clients. This can't fail because validation of
 // the connection information is precomputed in New and any errors are

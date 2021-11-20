@@ -140,20 +140,19 @@ func (c *Config) Clone(n string) (*Config, error) {
 	}
 	svc.Ports = []types.ServicePortConfig{*portConfig}
 
-	// Replace the DB service with our new service. We replace so that
-	// there is still exactly one squire service.
-	found := false
-	for i, s := range p.Services {
-		if s.Name == c.service.Name {
-			p.Services[i] = *svc
-			found = true
-			break
-		}
+	// We need to replace the networks with a new network so we can
+	// bring this one down on its own.
+	svc.Networks = map[string]*types.ServiceNetworkConfig{
+		svc.Name: nil,
 	}
-	if !found {
-		// should never happen
-		panic("failed to replace service")
+	p.Networks = map[string]types.NetworkConfig{
+		svc.Name: {
+			Name: svc.Name + "-net",
+		},
 	}
+
+	// Our project only has this cloned service
+	p.Services = []types.ServiceConfig{*svc}
 
 	// Shallow copy ourselves.
 	c2 := *c
