@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
+	"github.com/mitchellh/squire/internal/config"
 	"github.com/mitchellh/squire/internal/dbcompose"
 	"github.com/mitchellh/squire/internal/dbcontainer"
 	"github.com/mitchellh/squire/internal/dbdefault"
@@ -25,6 +26,11 @@ type baseCommand struct {
 
 	// Log is the logger to use.
 	Log hclog.Logger
+
+	//---------------------------------------------------------------
+	// Set after Init
+
+	Config *config.Config
 }
 
 // Close implements io.Closer. This should be called to gracefully clean up
@@ -57,6 +63,47 @@ func (c *baseCommand) Init(opts ...Option) error {
 
 	// Check for flags after args
 	if err := checkFlagsAfterArgs(args, baseCfg.Flags); err != nil {
+		return err
+	}
+
+	// Load our config
+	if err := c.loadConfig(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// loadConfig loads the configuration and sets it on the base.
+func (c *baseCommand) loadConfig() error {
+	var opts []config.Option
+
+	// Look for a config file
+	path, err := config.FindPath("", config.Filename)
+	if err != nil {
+		return err
+	}
+	if path == "" {
+		path, err = config.FindPath("", config.Filename+".cue")
+		if err != nil {
+			return err
+		}
+	}
+	if path == "" {
+		path, err = config.FindPath("", config.Filename+".json")
+		if err != nil {
+			return err
+		}
+	}
+
+	// If we have a config file load it
+	if path != "" {
+		opts = append(opts, config.FromFile(path))
+	}
+
+	// Load
+	c.Config, err = config.New(opts...)
+	if err != nil {
 		return err
 	}
 

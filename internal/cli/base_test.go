@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mitchellh/squire/internal/cli/clitest"
 )
@@ -40,4 +41,16 @@ func testBase(t *testing.T) *baseCommand {
 		Ctx: context.Background(),
 		Log: log,
 	}
+}
+
+func TestBase_loadConfig(t *testing.T) {
+	require := require.New(t)
+	base, _, _, finalize := testCLI(t)
+	defer finalize()
+
+	// Init with nothing should work
+	require.NoError(base.Init())
+
+	// Should have config
+	require.NotNil(base.Config)
 }
