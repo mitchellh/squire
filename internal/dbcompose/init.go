@@ -11,6 +11,10 @@ import (
 	"github.com/compose-spec/compose-go/types"
 )
 
+const (
+	labelSquire = "com.mitchellh.squire"
+)
+
 // loadFromFile loads a project from a file.
 func loadFromFile(path string) (*types.Project, error) {
 	opts, err := composecli.NewProjectOptions(
@@ -34,6 +38,12 @@ func (c *Config) init() error {
 	}
 	c.service = svc
 
+	// Add our label so we can track this later (for destruction)
+	if svc.Labels == nil {
+		svc.Labels = map[string]string{}
+	}
+	svc.Labels[labelSquire] = "1"
+
 	// Get connection URL
 	uri, err := connURI(svc)
 	if err != nil {
@@ -45,12 +55,13 @@ func (c *Config) init() error {
 }
 
 // service returns the service configuration for the service representing
-// the database.
+// the database. This returns a pointer to the exact slice element in the
+// project so it is important to be aware of modifications.
 //
 // Precondition: c.project != nil
 func service(p *types.Project) (*types.ServiceConfig, error) {
 	var result *types.ServiceConfig
-	for _, s := range p.Services {
+	for i, s := range p.Services {
 		if len(s.Extensions) == 0 {
 			continue
 		}
@@ -69,9 +80,8 @@ func service(p *types.Project) (*types.ServiceConfig, error) {
 			)
 		}
 
-		// We have to copy so we don't reuse the s reference
-		v := s
-		result = &v
+		// We return an exact reference to the index.
+		result = &p.Services[i]
 	}
 
 	// If we found, return

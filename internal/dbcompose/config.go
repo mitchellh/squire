@@ -122,6 +122,10 @@ func (c *Config) Clone(n string) (*Config, error) {
 	// Deep copy our project
 	p := copystructure.Must(copystructure.Copy(c.project)).(*types.Project)
 
+	// Rename our project so that Down works properly and so that its
+	// idempotent with regards to this clone name.
+	p.Name = fmt.Sprintf("%s-%s", p.Name, n)
+
 	// Modify our project service. What we want to do here is create a new
 	// service with a new name that is otherwise identical to our current service.
 	svc := copystructure.Must(copystructure.Copy(c.service)).(*types.ServiceConfig)
