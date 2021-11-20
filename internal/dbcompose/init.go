@@ -2,6 +2,7 @@ package dbcompose
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 
@@ -112,24 +113,58 @@ func connURI(svc *types.ServiceConfig) (string, error) {
 // This works by looking for a port forward from port 5432 (the default pg port)
 // to anything on the host.
 func pgPort(svc *types.ServiceConfig) (uint32, error) {
+	port, err := _pgPort(svc)
+	if err != nil {
+		return 0, err
+	}
+
+	return port.Published, nil
+}
+
+// pgReplacePort replaces the host port on the given service (in-place)
+// with the new port v. If v is not specified, some random port that is
+// available at the time of the function call is chosen.
+func pgReplacePort(svc *types.ServiceConfig, v uint32) error {
+	port, err := _pgPort(svc)
+	if err != nil {
+		return err
+	}
+
+	if v == 0 {
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			return err
+		}
+		defer ln.Close()
+
+		v = uint32(ln.Addr().(*net.TCPAddr).Port)
+	}
+
+	port.Published = v
+	return nil
+}
+
+// _pgPort is the helper shared by other functions to get a pointer directly
+// to the port forwarding configuration for accessing the database.
+func _pgPort(svc *types.ServiceConfig) (*types.ServicePortConfig, error) {
 	targetPort := uint32(pgDefaultPort)
 
 	// First load from our extension
 	ext, err := parseExtension(svc)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if ext.TargetPort > 0 {
 		targetPort = ext.TargetPort
 	}
 
-	for _, p := range svc.Ports {
+	for i, p := range svc.Ports {
 		if p.Target == targetPort {
-			return p.Published, nil
+			return &svc.Ports[i], nil
 		}
 	}
 
-	return 0, errors.WithDetailf(
+	return nil, errors.WithDetailf(
 		errors.Newf("failed to determine PostgreSQL port for service %q", svc.Name),
 		strings.TrimSpace(errDetailNoPort),
 		targetPort,
