@@ -1,3 +1,8 @@
+// This is the primary schema for Squire configuration.
+
+// The directory where the SQL files are.
+sql_dir: *"sql" | string
+
 // Dev settings configure the `squire up/down` behaviors for development.
 // For more complex configurations, use your own Docker Compose file.
 dev: {

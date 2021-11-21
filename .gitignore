@@ -1,5 +1,5 @@
 bin/squire
-squire.hcl
+.squire
 
 # This is used primarily for playing around with `squire up` dev, not
 # an actual shared required Docker dep so ignore it.

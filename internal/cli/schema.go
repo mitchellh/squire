@@ -18,8 +18,7 @@ import (
 type SchemaCommand struct {
 	*baseCommand
 
-	sqlDir string
-	write  bool
+	write bool
 }
 
 func (c *SchemaCommand) Run(args []string) int {
@@ -32,7 +31,7 @@ func (c *SchemaCommand) Run(args []string) int {
 
 	// Determine our directory. We want an absolute directory so we can
 	// put together the fs.FS implementation.
-	sqlDir, err := filepath.Abs(c.sqlDir)
+	sqlDir, err := filepath.Abs(c.Config.SQLDir)
 	if err != nil {
 		return c.exitError(fmt.Errorf("Error expanding sql directory: %w", err))
 	}
@@ -96,13 +95,6 @@ func (c *SchemaCommand) Run(args []string) int {
 func (c *SchemaCommand) Flags() *flag.Sets {
 	return c.flagSet(flagSetDefault, func(sets *flag.Sets) {
 		f := sets.NewSet("Command Options")
-
-		f.StringVar(&flag.StringVar{
-			Name:    "sqldir",
-			Target:  &c.sqlDir,
-			Default: "sql",
-			Usage:   "Root directory for SQL files",
-		})
 
 		f.BoolVar(&flag.BoolVar{
 			Name:    "write",
