@@ -12,6 +12,7 @@ import (
 	"github.com/mitchellh/squire/internal/dbcontainer"
 	"github.com/mitchellh/squire/internal/dbdefault"
 	"github.com/mitchellh/squire/internal/pkg/flag"
+	"github.com/mitchellh/squire/internal/squire"
 )
 
 // baseCommand is embedded in all commands to provide common logic and data.
@@ -31,6 +32,7 @@ type baseCommand struct {
 	// Set after Init
 
 	Config *config.Config
+	Squire *squire.Squire
 }
 
 // Close implements io.Closer. This should be called to gracefully clean up
@@ -70,6 +72,16 @@ func (c *baseCommand) Init(opts ...Option) error {
 	if err := c.loadConfig(); err != nil {
 		return err
 	}
+
+	// Initialize squire
+	sq, err := squire.New(
+		squire.WithConfig(c.Config),
+		squire.WithLogger(c.Log.Named("squire")),
+	)
+	if err != nil {
+		return err
+	}
+	c.Squire = sq
 
 	return nil
 }

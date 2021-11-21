@@ -6,13 +6,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/posener/complete"
 
 	"github.com/mitchellh/squire/internal/pkg/copy"
 	"github.com/mitchellh/squire/internal/pkg/flag"
-	"github.com/mitchellh/squire/internal/sqlbuild"
+	"github.com/mitchellh/squire/internal/squire"
 )
 
 type SchemaCommand struct {
@@ -29,18 +28,6 @@ func (c *SchemaCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 
-	// Determine our directory. We want an absolute directory so we can
-	// put together the fs.FS implementation.
-	sqlDir, err := filepath.Abs(c.Config.SQLDir)
-	if err != nil {
-		return c.exitError(fmt.Errorf("Error expanding sql directory: %w", err))
-	}
-	rootDir, rootFile := filepath.Split(sqlDir)
-	if len(rootDir) > 0 && rootDir[len(rootDir)-1] == filepath.Separator {
-		// Strip the trailining filepath separator.
-		rootDir = rootDir[:len(rootDir)-1]
-	}
-
 	// Our build output is stdout.
 	var buildOutput io.Writer = os.Stdout
 
@@ -49,6 +36,7 @@ func (c *SchemaCommand) Run(args []string) int {
 	// the schema because we don't want to corrupt it.
 	var schemaFile *os.File
 	if c.write {
+		var err error
 		schemaFile, err = ioutil.TempFile("", "squire")
 		if err != nil {
 			return c.exitError(fmt.Errorf(
@@ -59,14 +47,8 @@ func (c *SchemaCommand) Run(args []string) int {
 	}
 
 	// Build to our output
-	if err := sqlbuild.Build(&sqlbuild.Config{
+	if err := c.Squire.Schema(&squire.SchemaOptions{
 		Output: buildOutput,
-		FS:     os.DirFS(rootDir),
-		Root:   rootFile,
-		Logger: c.Log.Named("sqlbuild"),
-		Metadata: map[string]string{
-			"Generation Time": time.Now().Format(time.UnixDate),
-		},
 	}); err != nil {
 		return c.exitError(err)
 	}
@@ -80,7 +62,7 @@ func (c *SchemaCommand) Run(args []string) int {
 		}
 
 		// Our final path is the sqldir
-		final := filepath.Join(sqlDir, "schema.sql")
+		final := filepath.Join(c.Config.SQLDir, "schema.sql")
 
 		// Copy our file
 		if err := copy.CopyFile(schemaFile.Name(), final); err != nil {
