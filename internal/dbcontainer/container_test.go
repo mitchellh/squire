@@ -2,10 +2,8 @@ package dbcontainer
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
-	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	//"github.com/davecgh/go-spew/spew"
 
@@ -32,7 +30,7 @@ func TestUpDown(t *testing.T) {
 	require.NoError(t, ctr.Up(ctx))
 
 	// Connect
-	db, err := sql.Open("postgres", ctr.ConnURI())
+	db, err := ctr.Conn()
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -45,7 +43,7 @@ func TestUpDown(t *testing.T) {
 	require.NoError(t, ctr2.Up(ctx))
 
 	// Connect
-	db2, err := sql.Open("postgres", ctr2.ConnURI())
+	db2, err := ctr2.Conn()
 	require.NoError(t, err)
 	defer db2.Close()
 }

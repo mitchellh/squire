@@ -2,10 +2,12 @@ package dbcontainer
 
 import (
 	"context"
+	"database/sql"
 
 	composeapi "github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/hashicorp/go-hclog"
+	_ "github.com/lib/pq"
 
 	"github.com/mitchellh/squire/internal/dbcompose"
 )
@@ -61,6 +63,14 @@ func (c *Container) Clone(n string) (*Container, error) {
 // if the container isn't running, invalid information was provided, etc.
 func (c *Container) ConnURI() string {
 	return c.config.ConnURI()
+}
+
+// Conn establishes a connection to the database.
+//
+// This creates a NEW connection. Callers must close the connection when
+// they're done. This only works if the container is running.
+func (c *Container) Conn() (*sql.DB, error) {
+	return sql.Open("postgres", c.ConnURI())
 }
 
 // Up starts the container. If it is already running, this does nothing.
