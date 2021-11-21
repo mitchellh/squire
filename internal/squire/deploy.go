@@ -1,8 +1,10 @@
 package squire
 
 import (
+	"context"
 	"database/sql"
 	"io"
+	"io/ioutil"
 )
 
 type DeployOptions struct {
@@ -13,10 +15,24 @@ type DeployOptions struct {
 
 	// Target is the target to apply the SQL to. For dev this could be
 	// a local container, for production it could be a real remote connection.
-	Target sql.Conn
+	Target *sql.DB
 }
 
 // Deploy applies the given SQL to the target database instance.
-func (s *Squire) Deploy(opts *DeployOptions) error {
+func (s *Squire) Deploy(ctx context.Context, opts *DeployOptions) error {
+	db := opts.Target
+
+	// Load the SQL into memory.
+	sqlbs, err := ioutil.ReadAll(opts.SQL)
+	if err != nil {
+		return nil
+	}
+
+	// Execute it.
+	_, err = db.ExecContext(ctx, string(sqlbs))
+	if err != nil {
+		return nil
+	}
+
 	return nil
 }

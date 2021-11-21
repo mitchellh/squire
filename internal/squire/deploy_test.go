@@ -1,6 +1,7 @@
 package squire
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ func TestDeploy(t *testing.T) {
 
 	// Build our config
 	cfg, err := config.New(config.FromString(
-		`sql_dir: "testdata/schema"`))
+		`sql_dir: "testdata/deploy"`))
 	require.NoError(err)
 
 	// Build squire
@@ -39,6 +40,13 @@ func TestDeploy(t *testing.T) {
 		return db.Ping() == nil
 	}, 5*time.Second, 10*time.Millisecond)
 
-	// Test emptying
-	require.NoError(recreateDB(ctx, ctr.Config()))
+	// Generate schema
+	var buf bytes.Buffer
+	require.NoError(sq.Schema(&SchemaOptions{Output: &buf}))
+
+	// Test deploy
+	require.NoError(sq.Deploy(ctx, &DeployOptions{
+		SQL:    &buf,
+		Target: db,
+	}))
 }
