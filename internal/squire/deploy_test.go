@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -33,12 +32,10 @@ func TestDeploy(t *testing.T) {
 	defer ctr.Down(ctx)
 
 	// Connect
-	db, err := ctr.Conn()
+	db, err := ctr.Conn(ctx)
 	require.NoError(err)
 	defer db.Close()
-	require.Eventually(func() bool {
-		return db.Ping() == nil
-	}, 5*time.Second, 10*time.Millisecond)
+	require.NoError(db.Ping())
 
 	// Generate schema
 	var buf bytes.Buffer
@@ -48,5 +45,10 @@ func TestDeploy(t *testing.T) {
 	require.NoError(sq.Deploy(ctx, &DeployOptions{
 		SQL:    &buf,
 		Target: db,
+	}))
+
+	// Test a clean reset
+	require.NoError(sq.Reset(ctx, &ResetOptions{
+		Container: ctr,
 	}))
 }

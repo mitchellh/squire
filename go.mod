@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	cuelang.org/go v0.4.0
+	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/cockroachdb/errors v1.8.6
 	github.com/compose-spec/compose-go v1.0.5
 	github.com/docker/cli v20.10.7+incompatible

@@ -3,7 +3,9 @@ package dbcontainer
 import (
 	"context"
 	"database/sql"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	composeapi "github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/hashicorp/go-hclog"
@@ -70,12 +72,35 @@ func (c *Container) ConnURI() string {
 	return c.config.ConnURI()
 }
 
-// Conn establishes a connection to the database.
+// Conn establishes a connection to the database and waits for the DB
+// to become ready before returning.
 //
 // This creates a NEW connection. Callers must close the connection when
 // they're done. This only works if the container is running.
-func (c *Container) Conn() (*sql.DB, error) {
-	return sql.Open("pgx", c.ConnURI())
+func (c *Container) Conn(ctx context.Context) (*sql.DB, error) {
+	db, err := sql.Open("pgx", c.ConnURI())
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap our context in its own timeout that is reasonable. For
+	// container-based bootups, we expect to come up within a minute.
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+	defer cancel()
+
+	// Wait for the db to come to life.
+	err = backoff.Retry(func() error {
+		return db.Ping()
+	}, backoff.WithContext(
+		backoff.NewConstantBackOff(15*time.Millisecond),
+		ctx,
+	))
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }
 
 // Up starts the container. If it is already running, this does nothing.

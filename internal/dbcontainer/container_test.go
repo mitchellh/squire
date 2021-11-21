@@ -3,7 +3,6 @@ package dbcontainer
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	//"github.com/davecgh/go-spew/spew"
@@ -31,12 +30,10 @@ func TestUpDown(t *testing.T) {
 	require.NoError(t, ctr.Up(ctx))
 
 	// Connect
-	db, err := ctr.Conn()
+	db, err := ctr.Conn(ctx)
 	require.NoError(t, err)
 	defer db.Close()
-	require.Eventually(t, func() bool {
-		return db.Ping() == nil
-	}, 5*time.Second, 10*time.Millisecond)
+	require.NoError(t, db.Ping())
 
 	// Try cloning
 	ctr2, err := ctr.Clone("dup")
@@ -47,10 +44,8 @@ func TestUpDown(t *testing.T) {
 	require.NoError(t, ctr2.Up(ctx))
 
 	// Connect
-	db2, err := ctr2.Conn()
+	db2, err := ctr2.Conn(ctx)
 	require.NoError(t, err)
 	defer db2.Close()
-	require.Eventually(t, func() bool {
-		return db2.Ping() == nil
-	}, 5*time.Second, 10*time.Millisecond)
+	require.NoError(t, db2.Ping())
 }
