@@ -121,6 +121,12 @@ func Commands(
 			}, nil
 		},
 
+		"reset": func() (cli.Command, error) {
+			return &ResetCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
 		"version": func() (cli.Command, error) {
 			return &VersionCommand{
 				baseCommand: baseCommand,

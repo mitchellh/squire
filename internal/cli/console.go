@@ -29,7 +29,7 @@ func (c *ConsoleCommand) Run(args []string) int {
 	}
 
 	// Get our container
-	ctr, err := c.container()
+	ctr, err := c.Squire.Container()
 	if err != nil {
 		return c.exitError(err)
 	}
