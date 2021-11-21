@@ -7,7 +7,7 @@ import (
 	composeapi "github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/hashicorp/go-hclog"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/mitchellh/squire/internal/dbcompose"
 )
@@ -56,6 +56,11 @@ func (c *Container) Clone(n string) (*Container, error) {
 	}, nil
 }
 
+// Config returns the underlying compose configuration.
+func (c *Container) Config() *dbcompose.Config {
+	return c.config
+}
+
 // ConnURI returns the connection string in URI format. This can be used
 // with most PostgreSQL API clients. This can't fail because validation of
 // the connection information is precomputed in New and any errors are
@@ -70,7 +75,7 @@ func (c *Container) ConnURI() string {
 // This creates a NEW connection. Callers must close the connection when
 // they're done. This only works if the container is running.
 func (c *Container) Conn() (*sql.DB, error) {
-	return sql.Open("postgres", c.ConnURI())
+	return sql.Open("pgx", c.ConnURI())
 }
 
 // Up starts the container. If it is already running, this does nothing.
