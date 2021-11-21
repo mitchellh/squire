@@ -38,6 +38,12 @@ func New(opts ...Option) (*Config, error) {
 		value = value.Unify(newVal)
 	}
 
+	// Load strings
+	for _, s := range options.Strings {
+		newVal := cuectx.CompileString(s)
+		value = value.Unify(newVal)
+	}
+
 	// Build our codec for decoding
 	if err := value.Decode(&result); err != nil {
 		return nil, err
@@ -56,7 +62,17 @@ func FromFile(path string) Option {
 	}
 }
 
+// FromString loads from a string.
+func FromString(v string) Option {
+	return func(opts *options) {
+		opts.Strings = append(opts.Strings, v)
+	}
+}
+
 type options struct {
 	// Files to load
 	Files []string
+
+	// Strings are additional configs to load as strings.
+	Strings []string
 }
