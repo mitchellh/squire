@@ -10,6 +10,11 @@ to test anything in the database. And deployment is done by diffing your target
 database with your desired schema, proposing SQL steps to get there, and then
 applying those changes.
 
+**Squire requires PostgreSQL 13+.** This could be resolved with some minor
+work to the source, there isn't anything strictly required in version 13
+that we need, I just didn't need earlier versions. Contributions are welcome
+to support earlier versions.
+
 ## Usage
 
 For new projects, generate an opinionated folder layout with `init`:
