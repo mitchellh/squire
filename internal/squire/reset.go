@@ -28,6 +28,10 @@ func recreateDB(ctx context.Context, cfg *dbcompose.Config) error {
 
 	// Connect,
 	db, err := sql.Open("pgx", u.String())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 
 	// Drop our database
 	// NOTE: This query requires PG13+
