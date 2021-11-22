@@ -17,7 +17,9 @@ import (
 type SchemaCommand struct {
 	*baseCommand
 
-	write bool
+	write     bool
+	tests     bool
+	testsOnly bool
 }
 
 func (c *SchemaCommand) Run(args []string) int {
@@ -26,6 +28,11 @@ func (c *SchemaCommand) Run(args []string) int {
 		WithFlags(c.Flags(), nil),
 	); err != nil {
 		return c.exitError(err)
+	}
+
+	// If we're rendering tests, do not write.
+	if c.tests {
+		c.write = false
 	}
 
 	// Our build output is stdout.
@@ -48,7 +55,9 @@ func (c *SchemaCommand) Run(args []string) int {
 
 	// Build to our output
 	if err := c.Squire.Schema(&squire.SchemaOptions{
-		Output: buildOutput,
+		Output:    buildOutput,
+		Tests:     c.tests,
+		TestsOnly: c.testsOnly,
 	}); err != nil {
 		return c.exitError(err)
 	}
@@ -85,6 +94,22 @@ func (c *SchemaCommand) Flags() *flag.Sets {
 			Usage:   "Write the SQL schemas to <sqldir>/schema.sql",
 			Aliases: []string{"w"},
 		})
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "test",
+			Target:  &c.tests,
+			Default: false,
+			Usage: "Include the test SQL files (ending in _test.sql). " +
+				"This implies -write=false.",
+		})
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "test-only",
+			Target:  &c.testsOnly,
+			Default: false,
+			Usage: "Only show test SQL files. This requires -test. " +
+				"This implies -write=false.",
+		})
 	})
 }
 
@@ -109,6 +134,11 @@ Usage: squire schema [options]
   This builds the SQL schema from the .sql files in your "sql/" directory
   and outputs it to stdout. This is NOT reading the currently deployed
   schema from any database.
+
+  By default, this only includes non-test SQL files (SQL files that do
+  not end in "_test.sql"). The "-test" flag can be specified to include
+  test SQL files and the "-test-only" flag can be specified to ONLY
+  show test SQL files.
 
 ` + c.Flags().Help())
 }
