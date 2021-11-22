@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"io"
 	"net/url"
+	"time"
+
+	"github.com/cenkalti/backoff/v4"
 
 	"github.com/mitchellh/squire/internal/dbcompose"
 	"github.com/mitchellh/squire/internal/dbcontainer"
@@ -88,6 +91,18 @@ func recreateDB(ctx context.Context, cfg *dbcompose.Config) error {
 		return err
 	}
 	defer db.Close()
+
+	// Wait for the connection to become ready
+	err = backoff.Retry(func() error {
+		return db.Ping()
+	}, backoff.WithContext(
+		backoff.NewConstantBackOff(15*time.Millisecond),
+		ctx,
+	))
+	if err != nil {
+		db.Close()
+		return err
+	}
 
 	// Drop our database
 	// NOTE: This query requires PG13+

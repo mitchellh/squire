@@ -103,6 +103,12 @@ func Commands(
 			}, nil
 		},
 
+		"diff": func() (cli.Command, error) {
+			return &DiffCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
 		"schema": func() (cli.Command, error) {
 			return &SchemaCommand{
 				baseCommand: baseCommand,
