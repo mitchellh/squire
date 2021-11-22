@@ -1,10 +1,10 @@
 package squire
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -93,27 +93,20 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 
 	// We need to capture stdout/stderr because the compose API doesn't
 	// allow configurable output streams.
-	var bufout, buferr bytes.Buffer
-	err = stdcapture.Capture(&bufout, &buferr, func() error {
+	err = stdcapture.SuccessOnly(ioutil.Discard, ioutil.Discard, func() error {
 		return source.Up(ctx)
 	})
 	if err != nil {
-		io.Copy(os.Stdout, &bufout)
-		io.Copy(os.Stderr, &buferr)
 		return errors.WithDetail(
 			errors.Newf("error starting source container: %w", err),
 			strings.TrimSpace(errCreatingSource),
 		)
 	}
 	defer func() {
-		bufout.Reset()
-		buferr.Reset()
-		err = stdcapture.Capture(&bufout, &buferr, func() error {
+		err = stdcapture.SuccessOnly(ioutil.Discard, ioutil.Discard, func() error {
 			return source.Down(ctx)
 		})
 		if err != nil {
-			io.Copy(os.Stdout, &bufout)
-			io.Copy(os.Stderr, &buferr)
 			L.Error("error destroying source container, may still be dangling",
 				"err", err)
 		}

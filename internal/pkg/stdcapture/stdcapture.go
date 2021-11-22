@@ -4,6 +4,7 @@
 package stdcapture
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"sync"
@@ -54,4 +55,26 @@ func Capture(dstout, dsterr io.Writer, f func() error) error {
 	}()
 
 	return f()
+}
+
+// SuccessOnly captures stdout/stderr but also outputs it back to the
+// normal stdout/stderr streams IF there is an error.
+func SuccessOnly(dstout, dsterr io.Writer, f func() error) error {
+	// Write to both dst and a buffer
+	var bufout, buferr bytes.Buffer
+	dstout = io.MultiWriter(dstout, &bufout)
+	dsterr = io.MultiWriter(dsterr, &buferr)
+
+	// Capture
+	err := Capture(&bufout, &buferr, f)
+
+	// On error, just copy it over to stdout/stderr
+	if err != nil {
+		io.Copy(os.Stdout, &bufout)
+		io.Copy(os.Stderr, &buferr)
+		return err
+	}
+
+	// No error, just return
+	return nil
 }
