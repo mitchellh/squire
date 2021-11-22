@@ -16,7 +16,8 @@ import (
 type DeployCommand struct {
 	*baseCommand
 
-	force bool
+	force      bool
+	production bool
 }
 
 func (c *DeployCommand) Run(args []string) int {
@@ -33,6 +34,16 @@ func (c *DeployCommand) Run(args []string) int {
 	// Let's determine our target.
 	var targetURI string
 	var targetDB *sql.DB
+
+	if c.production {
+		L.Warn("deploying to production")
+		u, err := c.Config.ProdURL()
+		if err != nil {
+			return c.exitError(err)
+		}
+
+		targetURI = u
+	}
 
 	if targetURI == "" {
 		L.Debug("no target URI, using dev container by default")
@@ -111,6 +122,14 @@ func (c *DeployCommand) Flags() *flag.Sets {
 			Usage:   "Do not ask for confirmation.",
 			Aliases: []string{"f"},
 		})
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "production",
+			Target:  &c.production,
+			Default: false,
+			Usage:   "Deploy to the production database.",
+			Aliases: []string{"p"},
+		})
 	})
 }
 
@@ -134,7 +153,8 @@ Usage: squire deploy [options]
 
   This applies the output from "squire diff" to a target database.
   The target database by default is the development container created
-  with "squire up".
+  with "squire up". The target database is production if the "-production"
+  flag is specified.
 
   In development, it is typically faster to use "squire reset" to continously
   delete and reapply the full schema, especially if you don't care about

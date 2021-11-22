@@ -7,6 +7,7 @@ import (
 	"cuelang.org/go/cue/format"
 	"github.com/posener/complete"
 
+	"github.com/mitchellh/squire/internal/config"
 	"github.com/mitchellh/squire/internal/pkg/flag"
 )
 
@@ -14,6 +15,8 @@ type ConfigCommand struct {
 	*baseCommand
 
 	json bool
+	def  bool
+	full bool
 }
 
 func (c *ConfigCommand) Run(args []string) int {
@@ -24,8 +27,17 @@ func (c *ConfigCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 
+	cfg := c.Config
+	if c.def {
+		var err error
+		cfg, err = config.New()
+		if err != nil {
+			return c.exitError(err)
+		}
+	}
+
 	if c.json {
-		bs, err := c.Config.Root.MarshalJSON()
+		bs, err := cfg.Root.MarshalJSON()
 		if err != nil {
 			return c.exitError(err)
 		}
@@ -35,8 +47,8 @@ func (c *ConfigCommand) Run(args []string) int {
 	}
 
 	// Get our config
-	node := c.Config.Root.Syntax(
-		cue.Concrete(true),
+	node := cfg.Root.Syntax(
+		cue.Concrete(!c.full),
 		cue.Docs(true),
 	)
 	bs, err := format.Node(node)
@@ -57,6 +69,20 @@ func (c *ConfigCommand) Flags() *flag.Sets {
 			Target:  &c.json,
 			Default: false,
 			Usage:   "Write the configuration in JSON format.",
+		})
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "default",
+			Target:  &c.def,
+			Default: false,
+			Usage:   "Output only the default configuration.",
+		})
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "full",
+			Target:  &c.full,
+			Default: false,
+			Usage:   "Output non-concrete values such as types.",
 		})
 	})
 }
