@@ -1,7 +1,7 @@
 package squire
 
 import (
-	//"bytes"
+	"bytes"
 	"context"
 	"testing"
 
@@ -44,5 +44,8 @@ func TestDiff(t *testing.T) {
 	require.NoError(err)
 
 	// Diff!
-	require.NoError(sq2.Diff(ctx, &DiffOptions{}))
+	var out bytes.Buffer
+	require.NoError(sq2.Diff(ctx, &DiffOptions{Output: &out}))
+	require.NotEmpty(out.String())
+	t.Logf("output: %s", out.String())
 }

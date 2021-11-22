@@ -3,6 +3,7 @@ package squire
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,6 +26,10 @@ type DiffOptions struct {
 	// "live" schema. If this is empty, then the target will be the primary
 	// development container.
 	TargetURI string
+
+	// Output is where the final diff is written. If this is not set, it
+	// defaults to os.Stdout
+	Output io.Writer
 }
 
 // Diff creates a diff between two database instances.
@@ -46,6 +51,9 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 		if err != nil {
 			return err
 		}
+	}
+	if opts.Output == nil {
+		opts.Output = os.Stdout
 	}
 
 	// If the target URI is not specified, then we're using the
@@ -109,7 +117,7 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 		"--source-dbname", sourceURI,
 		"--target-dbname", targetURI,
 	)
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = opts.Output
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	return cmd.Run()
