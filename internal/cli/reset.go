@@ -1,8 +1,12 @@
 package cli
 
 import (
+	"strings"
+
+	"github.com/cockroachdb/errors"
 	"github.com/posener/complete"
 
+	"github.com/mitchellh/squire/internal/dbcontainer"
 	"github.com/mitchellh/squire/internal/pkg/flag"
 	"github.com/mitchellh/squire/internal/squire"
 )
@@ -19,6 +23,24 @@ func (c *ResetCommand) Run(args []string) int {
 		WithFlags(c.Flags(), nil),
 	); err != nil {
 		return c.exitError(err)
+	}
+
+	// Verify our container is running
+	ctr, err := c.Squire.Container()
+	if err != nil {
+		return c.exitError(err)
+	}
+
+	st, err := ctr.Status(ctx)
+	if err != nil {
+		return c.exitError(err)
+	}
+
+	if st.State != dbcontainer.Running {
+		return c.exitError(errors.WithDetail(
+			errors.New("database container is not running"),
+			strings.TrimSpace(errDetailNotRunning),
+		))
 	}
 
 	// Reset
@@ -65,3 +87,10 @@ Usage: squire reset [options]
 
 ` + c.Flags().Help())
 }
+
+const (
+	errDetailNotRunning = `
+The database container isn't running. Please run "squire up" to start
+the container.
+`
+)
