@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/mitchellh/go-wordwrap"
 	"github.com/posener/complete"
 
 	"github.com/mitchellh/squire/internal/pkg/flag"
@@ -78,7 +79,11 @@ func (c *TestCommand) renderPGUnitResults(rows *sql.Rows) error {
 		// into a row.
 		var row table.Row
 		for _, v := range rowVals {
-			row = append(row, v.Elem().Interface())
+			raw := v.Elem().Interface()
+			if s, ok := raw.(string); ok {
+				raw = wordwrap.WrapString(s, 50)
+			}
+			row = append(row, raw)
 		}
 		t.AppendRow(row)
 	}
