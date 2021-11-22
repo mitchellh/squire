@@ -17,14 +17,11 @@ to support earlier versions.
 
 ## Usage
 
-For new projects, generate an opinionated folder layout with `init`:
-
-	$ squire init myapp
-
-This will create a `sql` directory that looks roughly like the following
-and gives you some guidance on where to put bits of your SQL structure.
-**Note that you do not have to follow this structure.** Details on how to
-use any structure you want are in the documentation.
+For new projects, start by creating a `sql` directory with the structure
+below. You must put your SQL files that are part of your schema within
+directories named `NN-<name>` where NN is a number and "name" is anything
+you want. Note: you can change the directory from `sql` using the
+configuration documented later.
 
 ```
 .

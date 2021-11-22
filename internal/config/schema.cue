@@ -14,12 +14,23 @@ dev: {
 	default_image: *"postgres:13.4" | string
 }
 
+// Test settings configure how unit testing works. Today, only pgUnit is
+// supported. Support for pgTAP may be added later. There isn't any reason
+// today to modify these configurations, but perhaps in the future.
+test: #testPgUnit
+
 // Production determines the settings for the "production" target when
 // used with commands such as diff or deploy.
 production: *#prodEnv | #prodExec
 
 //-------------------------------------------------------------------
 // Type Definitions
+
+// testPgUnit uses pgUnit to run tests. Squire automatically installs
+// the pgUnit schema prior to running any tests.
+#testPgUnit: {
+	mode: "pgunit"
+}
 
 // prodEnv reads the production target by environment variable.
 #prodEnv: {

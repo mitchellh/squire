@@ -13,6 +13,11 @@ import (
 type SchemaOptions struct {
 	// Output is the location where the schema will be written.
 	Output io.Writer
+
+	// Tests will render test SQL files too (files ending in _test.sql).
+	// TestsOnly will render only test files and requires Tests to be true.
+	Tests     bool
+	TestsOnly bool
 }
 
 // Schema generates the SQL schema from the SQL directory in the attached
@@ -32,10 +37,12 @@ func (s *Squire) Schema(opts *SchemaOptions) error {
 
 	// Build to our output
 	return sqlbuild.Build(&sqlbuild.Config{
-		Output: opts.Output,
-		FS:     os.DirFS(rootDir),
-		Root:   rootFile,
-		Logger: s.logger.Named("sqlbuild"),
+		Output:    opts.Output,
+		FS:        os.DirFS(rootDir),
+		Root:      rootFile,
+		Logger:    s.logger.Named("sqlbuild"),
+		Tests:     opts.Tests,
+		TestsOnly: opts.TestsOnly,
 		Metadata: map[string]string{
 			"Generation Time": time.Now().Format(time.UnixDate),
 		},
