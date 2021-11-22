@@ -139,6 +139,12 @@ func Commands(
 			}, nil
 		},
 
+		"deploy": func() (cli.Command, error) {
+			return &DeployCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
 		"version": func() (cli.Command, error) {
 			return &VersionCommand{
 				baseCommand: baseCommand,
