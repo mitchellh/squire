@@ -49,6 +49,7 @@ func New(opts ...Option) (*Config, error) {
 		return nil, err
 	}
 
+	result.Root = value
 	return &result, nil
 }
 
