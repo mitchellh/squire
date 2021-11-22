@@ -83,7 +83,9 @@ Usage: squire reset [options]
   about clean diff-based deploys so reset is more appropriate.
 
   Reset currently only works against the development database. It is not
-  possible to reset the production database.
+  possible to reset the production database. You must do this manually
+  without the help of Squire; it is too dangerous of an operation to
+  make so easily accessible in Squire.
 
 ` + c.Flags().Help())
 }

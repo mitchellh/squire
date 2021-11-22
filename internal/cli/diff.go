@@ -9,10 +9,13 @@ import (
 
 type DiffCommand struct {
 	*baseCommand
+
+	production bool
 }
 
 func (c *DiffCommand) Run(args []string) int {
 	ctx := c.Ctx
+	L := c.Log.Named("diff")
 
 	if err := c.Init(
 		WithArgs(args),
@@ -21,8 +24,26 @@ func (c *DiffCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 
+	// Default target URI is empty, which forces Diff to use our dev container.
+	var targetURI string
+
+	// If we specified production, then get that.
+	if c.production {
+		L.Info("diffing against production")
+		u, err := c.Config.ProdURL()
+		if err != nil {
+			return c.exitError(err)
+		}
+
+		targetURI = u
+	} else {
+		L.Info("diffing against development container")
+	}
+
 	// Verify our container is running
 	err := c.Squire.Diff(ctx, &squire.DiffOptions{
+		TargetURI: targetURI,
+
 		// Output verbose info if we have any verbosity set on our logger.
 		Verbose: c.Log.IsDebug(),
 	})
@@ -35,7 +56,15 @@ func (c *DiffCommand) Run(args []string) int {
 
 func (c *DiffCommand) Flags() *flag.Sets {
 	return c.flagSet(flagSetDefault, func(sets *flag.Sets) {
-		// Nothing today
+		f := sets.NewSet("Command Options")
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "production",
+			Target:  &c.production,
+			Default: false,
+			Usage:   "Diff against the production database.",
+			Aliases: []string{"p"},
+		})
 	})
 }
 

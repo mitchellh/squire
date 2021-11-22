@@ -83,6 +83,10 @@ func (c *Config) prodExec() (string, error) {
 		bs = bs[:idx]
 	}
 
+	if string(bs) == "" {
+		return "", ErrProdNotFound
+	}
+
 	return string(bs), nil
 }
 
