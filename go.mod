@@ -13,6 +13,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/hashicorp/go-hclog v1.0.0
 	github.com/jackc/pgx/v4 v4.13.0
+	github.com/jedib0t/go-pretty/v6 v6.2.4
 	github.com/kr/text v0.2.0
 	github.com/mitchellh/cli v1.1.2
 	github.com/mitchellh/copystructure v1.2.0
@@ -93,6 +94,7 @@ require (
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect

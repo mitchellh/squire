@@ -145,6 +145,12 @@ func Commands(
 			}, nil
 		},
 
+		"test": func() (cli.Command, error) {
+			return &TestCommand{
+				baseCommand: baseCommand,
+			}, nil
+		},
+
 		"url": func() (cli.Command, error) {
 			return &URLCommand{
 				baseCommand: baseCommand,
