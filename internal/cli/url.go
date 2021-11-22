@@ -10,6 +10,8 @@ import (
 
 type URLCommand struct {
 	*baseCommand
+
+	production bool
 }
 
 func (c *URLCommand) Run(args []string) int {
@@ -18,6 +20,17 @@ func (c *URLCommand) Run(args []string) int {
 		WithFlags(c.Flags(), nil),
 	); err != nil {
 		return c.exitError(err)
+	}
+
+	// If production, grab that
+	if c.production {
+		uri, err := c.Config.ProdURL()
+		if err != nil {
+			return c.exitError(err)
+		}
+
+		fmt.Println(uri)
+		return 0
 	}
 
 	// Get our container
@@ -32,7 +45,15 @@ func (c *URLCommand) Run(args []string) int {
 
 func (c *URLCommand) Flags() *flag.Sets {
 	return c.flagSet(flagSetDefault, func(sets *flag.Sets) {
-		// Nothing today
+		f := sets.NewSet("Command Options")
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "production",
+			Target:  &c.production,
+			Default: false,
+			Usage:   "Use the production database.",
+			Aliases: []string{"p"},
+		})
 	})
 }
 

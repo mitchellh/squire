@@ -16,8 +16,7 @@ import (
 type ConsoleCommand struct {
 	*baseCommand
 
-	sqlDir string
-	write  bool
+	production bool
 }
 
 func (c *ConsoleCommand) Run(args []string) int {
@@ -36,6 +35,14 @@ func (c *ConsoleCommand) Run(args []string) int {
 
 	// Get the URI
 	uri := ctr.ConnURI()
+
+	// If production, grab the productino URI
+	if c.production {
+		uri, err = c.Config.ProdURL()
+		if err != nil {
+			return c.exitError(err)
+		}
+	}
 
 	// Look for psql
 	argv0, err := osexec.LookPath("psql")
@@ -57,7 +64,15 @@ func (c *ConsoleCommand) Run(args []string) int {
 
 func (c *ConsoleCommand) Flags() *flag.Sets {
 	return c.flagSet(flagSetDefault, func(sets *flag.Sets) {
-		// Nothing today
+		f := sets.NewSet("Command Options")
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "production",
+			Target:  &c.production,
+			Default: false,
+			Usage:   "Use the production database.",
+			Aliases: []string{"p"},
+		})
 	})
 }
 
@@ -81,6 +96,9 @@ Usage: squire console [options]
 
   This requires that the database is running (from calling "up") and
   that your system has "psql" available.
+
+  This can also open a console to the production database by
+  specifying the "-production" flag.
 
 ` + c.Flags().Help())
 }
