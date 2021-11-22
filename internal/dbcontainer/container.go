@@ -3,6 +3,7 @@ package dbcontainer
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -125,4 +126,37 @@ func (c *Container) Down(ctx context.Context) error {
 		Project: p,
 		Volumes: true,
 	})
+}
+
+// Status returns the status of the container.
+//
+// If the container is not created, a non-nil status will be returned
+// with State == NotCreated. Other fields in the status in this case
+// will be undefined (may be empty or not, but are meaningless and
+// should not be depended on).
+func (c *Container) Status(ctx context.Context) (*Status, error) {
+	p := c.config.Project()
+	containers, err := c.compose.Ps(ctx, p.Name, composeapi.PsOptions{
+		Services: []string{c.config.Service()},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Not created
+	if len(containers) == 0 {
+		return &Status{State: NotCreated}, nil
+	}
+
+	// No idea what to make of this.
+	if len(containers) > 1 {
+		c.logger.Warn("more than one container on status", "containers", containers)
+	}
+
+	c0 := containers[0]
+	return &Status{
+		ID:    c0.ID,
+		Name:  c0.Name,
+		State: State(strings.ToLower(c0.State)),
+	}, nil
 }

@@ -23,6 +23,11 @@ func TestUpDown(t *testing.T) {
 	ctr, err := New(WithCompose(cfg))
 	require.NoError(t, err)
 
+	// Test status, should be not created
+	st, err := ctr.Status(ctx)
+	require.NoError(t, err)
+	require.Equal(t, NotCreated, st.State)
+
 	// Launch, ensure we come back down
 	defer func() {
 		require.NoError(t, ctr.Down(ctx))
@@ -34,6 +39,11 @@ func TestUpDown(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 	require.NoError(t, db.Ping())
+
+	// Should be created
+	st, err = ctr.Status(ctx)
+	require.NoError(t, err)
+	require.Equal(t, Running, st.State)
 
 	// Try cloning
 	ctr2, err := ctr.Clone("dup")
@@ -48,4 +58,12 @@ func TestUpDown(t *testing.T) {
 	require.NoError(t, err)
 	defer db2.Close()
 	require.NoError(t, db2.Ping())
+
+	// Bring first container down
+	require.NoError(t, ctr.Down(ctx))
+
+	// Should be not created
+	st, err = ctr.Status(ctx)
+	require.NoError(t, err)
+	require.Equal(t, NotCreated, st.State)
 }

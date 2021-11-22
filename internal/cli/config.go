@@ -84,5 +84,14 @@ Usage: squire config [options]
   be used to inspect the defaults or verify that your configuration changes
   are applying.
 
+  The default format will be Cue with comments (documentation) included.
+  This is a fully valid configuration file you can start with. The "--json"
+  flag can be specified to output in JSON.
+
+  The configuration file should be saved to .squire, .squire.cue, or
+  .squire.json (with only the final filename being json-formatted and
+  the others being in Cue). Only one file will be loaded, in the order
+  given.
+
 ` + c.Flags().Help())
 }
