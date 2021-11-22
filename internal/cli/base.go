@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/cockroachdb/errors"
@@ -122,11 +121,11 @@ func (c *baseCommand) loadConfig() error {
 
 // exitError should be called by commands to exit with an error.
 func (c *baseCommand) exitError(err error) int {
-	fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+	colorError.Fprintf(os.Stderr, "%s\n", err.Error())
 
 	// If this is a cockroach error with details, then output the details.
 	if v := errors.FlattenDetails(err); v != "" {
-		fmt.Fprintf(os.Stderr, "\n%s\n", v)
+		colorErrorDetail.Fprintf(os.Stderr, "\n%s\n", v)
 	}
 
 	return 1

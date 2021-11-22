@@ -5,5 +5,7 @@ import (
 )
 
 var (
-	colorSuccess = color.New(color.FgGreen)
+	colorSuccess     = color.New(color.FgGreen)
+	colorError       = color.New(color.FgRed, color.Bold)
+	colorErrorDetail = color.New(color.FgRed)
 )
