@@ -51,7 +51,6 @@ func Build(cfg *Config) error {
 		cfg.Root = "sql"
 	}
 	if cfg.Logger == nil {
-		// TODO: null logger default
 		cfg.Logger = hclog.L()
 	}
 
