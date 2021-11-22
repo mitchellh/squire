@@ -78,7 +78,10 @@ and production. Or just run the deploy command, which whill still require
 approval prior to deploying. Deployment does not rely on your dev
 or test databases so it is safe to do anytime you're ready.
 
-	$ squire diff
+The production database is specified using the `PGURI` environment variable
+by default, but this can be changed through the configuration.
+
+	$ squire diff -production
 	$ squire deploy -production
 
 You can also deploy specific refs from your Git repository, which
@@ -100,3 +103,92 @@ of Squire can still be very useful, and you can use the `squire diff`
 command to create a starting point for your migrations. In this workflow,
 you would never call `squire deploy`, but you'd use the other features
 of Squire.
+
+## Configuration
+
+Squire requires zero configuration out of the box. You can view the
+current configuration at any time by running "squire config". This includes
+documentation for the Squire configuration.
+
+### Custom PostgreSQL Container
+
+For development with `squire up`, Squire by default creates a PostgreSQL
+container based on the official "postgres" Docker image. This container
+can be fully customized using [Docker Compose](https://docs.docker.com/compose/)
+by creating a service with the `x-squire` configuration set, as shown below.
+Save this to `docker-compose.yml` within your repository root.
+
+```yaml
+version: '3'
+services:
+  db:
+    image: "postgres:13.4"
+    ports:
+      - "1234:5432"
+    environment:
+      - POSTGRES_DB=app-dev
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    x-squire: {}
+```
+
+When running `squire up`, Squire will first look for a Docker Compose
+configuration with a service configured with `x-squire`. If this is found,
+Squire will start this service along with all dependent services in the
+Docker Compose file.
+
+Additional configurations can be specified on `x-squire` as documented below:
+
+```yaml
+version: '3'
+services:
+  db:
+    image: "postgres:13.4"
+    ports:
+      - "1234:5432"
+    environment:
+      - POSTGRES_DB=app-dev
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    x-squire:
+      # The name of the database to use within this container.
+      db: "app-dev"
+
+      # The port that PostgreSQL is listening on INSIDE THE CONTAINER.
+      # You must specify a port forward to the host for this port. Squire
+      # uses this to determine what port to connect to by lookin up the
+      # port forwarding (in this case "1234").
+      targetPort: 5432
+```
+
+### Custom Configuration
+
+To specify custom configuration, create a file named `.squire` in any
+directory where you would call the `squire` CLI (or, any parent directories).
+You may also specify the configuration in JSON format using `.squire.json`.
+The Squire configuration format is [Cue](https://cuelang.org/).
+
+Currently, the default configuration (`squire config -default`) is:
+
+```cue
+{
+	// The directory where the SQL files are. Within this directory, only
+	// SQL files in subdirectories formatted "NN-<name>" are read, where NN is
+	// some two digit number, i.e. "01-schema". Top-level SQL files in this
+	// directory are ignored.
+	sql_dir: "sql"
+
+	// Dev settings configure the development container. These are purposely
+	// limited because for more complex configurations, you can use your own
+	// Docker Compose file.
+	dev: {
+		// The default container image to use if docker compose is NOT being used.
+		default_image: "postgres:13.4"
+	}
+
+	// Production determines the settings for the "production" target when
+	// used with commands such as diff or deploy.
+	production: {
+		mode: "env"
+		env:  "PGURI"
+	}
+}
+```
