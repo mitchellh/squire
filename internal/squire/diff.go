@@ -32,6 +32,9 @@ type DiffOptions struct {
 	// Output is where the final diff is written. If this is not set, it
 	// defaults to os.Stdout
 	Output io.Writer
+
+	// Verbose will output debug information from the diff invocation.
+	Verbose bool
 }
 
 // Diff creates a diff between two database instances.
@@ -108,7 +111,7 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 		err = stdcapture.Capture(&bufout, &buferr, func() error {
 			return source.Down(ctx)
 		})
-		if err := source.Down(ctx); err != nil {
+		if err != nil {
 			io.Copy(os.Stdout, &bufout)
 			io.Copy(os.Stderr, &buferr)
 			L.Error("error destroying source container, may still be dangling",
@@ -130,11 +133,17 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 	targetURI := opts.TargetURI
 	L.Info("diffing", "source", sourceURI, "target", targetURI)
 
-	// Run pgquarrel
-	cmd := exec.CommandContext(ctx, pgqPath,
+	// Our args
+	args := []string{
 		"--source-dbname", sourceURI,
 		"--target-dbname", targetURI,
-	)
+	}
+	if opts.Verbose {
+		args = append(args, "-vv")
+	}
+
+	// Run pgquarrel
+	cmd := exec.CommandContext(ctx, pgqPath, args...)
 	cmd.Stdout = opts.Output
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin

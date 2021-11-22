@@ -8,9 +8,6 @@ import (
 
 type UpCommand struct {
 	*baseCommand
-
-	sqlDir string
-	write  bool
 }
 
 func (c *UpCommand) Run(args []string) int {
