@@ -27,6 +27,12 @@ type Config struct {
 	FS   fs.FS
 	Root string
 
+	// Tests, if true, will include files ending in _test.sql. If
+	// TestsOnly is true, then ONLY test files are added, and non-test
+	// files are ignored.
+	Tests     bool
+	TestsOnly bool
+
 	// Metadata is added at the beginning of the file in a SQL comment.
 	Metadata map[string]string
 
@@ -109,6 +115,20 @@ func Build(cfg *Config) error {
 			// If the extension isn't SQL, ignore.
 			if strings.ToLower(filepath.Ext(file)) != ".sql" {
 				log.Trace("ignoring non-SQL file")
+				return nil
+			}
+
+			isTest := strings.HasSuffix(file, "_test.sql")
+
+			// Not a test, and we only want tests
+			if cfg.TestsOnly && !isTest {
+				log.Trace("ignoring non-test file in test only mode")
+				return nil
+			}
+
+			// If we're not included tests, skip this.
+			if !cfg.Tests && isTest {
+				log.Trace("skipping test file")
 				return nil
 			}
 

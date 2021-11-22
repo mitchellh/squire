@@ -16,6 +16,7 @@ func TestBuild(t *testing.T) {
 	// options and so on.
 	cases := []string{
 		"build",
+		"tests",
 	}
 
 	for _, n := range cases {
@@ -29,6 +30,34 @@ func TestBuild(t *testing.T) {
 				Output: &buf,
 				FS:     os.DirFS("testdata"),
 				Root:   n,
+				Logger: hclog.New(&hclog.LoggerOptions{
+					Level: hclog.Debug,
+				}),
+			}))
+
+			g.Assert(t, n, buf.Bytes())
+		})
+	}
+}
+
+func TestBuild_test(t *testing.T) {
+	cases := []string{
+		"tests",
+	}
+
+	for _, n := range cases {
+		t.Run(n, func(t *testing.T) {
+			g := goldie.New(t,
+				goldie.WithNameSuffix("-testonly.golden.sql"),
+			)
+
+			var buf bytes.Buffer
+			require.NoError(t, Build(&Config{
+				Output:    &buf,
+				FS:        os.DirFS("testdata"),
+				Root:      n,
+				Tests:     true,
+				TestsOnly: true,
 				Logger: hclog.New(&hclog.LoggerOptions{
 					Level: hclog.Debug,
 				}),
