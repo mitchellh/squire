@@ -2,8 +2,10 @@
 package config
 
 import (
+	"bytes"
 	stderr "errors"
 	"os"
+	"os/exec"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -39,7 +41,7 @@ func (c *Config) ProdURL() (string, error) {
 		return c.prodEnv()
 
 	case "exec":
-		panic("TODO")
+		return c.prodExec()
 
 	default:
 		return "", errors.WithDetail(
@@ -58,6 +60,32 @@ func (c *Config) prodEnv() (string, error) {
 	return v, nil
 }
 
+func (c *Config) prodExec() (string, error) {
+	args := c.Production.Command
+	if len(args) == 0 {
+		return "", errors.New("'production.command' must be non-empty")
+	}
+
+	var bufout, buferr bytes.Buffer
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdout = &bufout
+	cmd.Stderr = &buferr
+	if err := cmd.Run(); err != nil {
+		return "", errors.WithDetailf(
+			errors.Newf("error executing command for production URL: %v", args),
+			strings.TrimSpace(errDetailExec),
+			bufout.String(), buferr.String(),
+		)
+	}
+
+	bs := bufout.Bytes()
+	if idx := bytes.IndexByte(bs, '\n'); idx >= 0 {
+		bs = bs[:idx]
+	}
+
+	return string(bs), nil
+}
+
 var ErrProdNotFound = stderr.New("production connection URL is empty")
 
 const (
@@ -65,5 +93,18 @@ const (
 The only valid modes to acquire a production connection URL are "env" and "exec".
 Run "squire config -default -full" to see the full default configuration
 including documentation.
+`
+
+	errDetailExec = `
+There was an error while executing the configured command to load the
+production database URL. The stdout and stderr is below:
+
+stdout:
+
+%[1]s
+
+stderr:
+
+%[2]s
 `
 )

@@ -62,3 +62,19 @@ func TestLoad_prodEnv(t *testing.T) {
 	require.NoError(err)
 	require.Equal("foo", url)
 }
+
+func TestLoad_prodExec(t *testing.T) {
+	require := require.New(t)
+
+	// Create
+	cfg, err := New(
+		FromString(`production: mode: "exec"`),
+		FromString(`production: command: ["echo", "foo", "bar"]`),
+	)
+	require.NoError(err)
+	require.NotNil(cfg)
+
+	url, err := cfg.ProdURL()
+	require.NoError(err)
+	require.Equal("foo bar", url)
+}
