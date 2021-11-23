@@ -7,8 +7,7 @@ import (
 
 var (
 	// The git commit that was compiled. This will be filled in by the compiler.
-	GitCommit   string
-	GitDescribe string
+	GitCommit string
 
 	// Version information. This can be manually set or filled in via
 	// compiler flags.
@@ -23,9 +22,8 @@ var (
 // the global variables in this package, but having it as a struct lets
 // us more easily pass it around, serialize it, etc.
 type VersionInfo struct {
-	Revision    string
-	Version     string
-	GitDescribe string
+	Revision string
+	Version  string
 }
 
 // Info returns the current binary version info.
@@ -35,9 +33,8 @@ func Info() *VersionInfo {
 
 func init() {
 	info = &VersionInfo{
-		Revision:    GitCommit,
-		Version:     Version,
-		GitDescribe: GitDescribe,
+		Revision: GitCommit,
+		Version:  Version,
 	}
 }
 
