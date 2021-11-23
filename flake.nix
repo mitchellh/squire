@@ -10,7 +10,9 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, ... }@inputs:
-    flake-utils.lib.eachDefaultSystem (system:
+    # Nix flake is Linux-only because my pg-quarrel package is linux only
+    # for now. I'd be happy to add more systems if we can find a way to test it.
+    flake-utils.lib.eachSystem ["aarch64-linux" "x86_64-linux"] (system:
       let
         # Our in-repo overlay of packages
         overlay = (import ./nix/overlay.nix) nixpkgs;
@@ -28,8 +30,11 @@
         repo = pkgs.callPackage ./nix/repo.nix {
           inherit pkgs;
         };
-      in {
+      in rec {
         devShell = repo.shell;
+        packages.squire = repo.package;
+        defaultPackage = packages.squire;
+        checks.fmt = repo.fmtcheck;
       }
     );
 }
