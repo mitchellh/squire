@@ -21,7 +21,7 @@ jobs:
         nix build .
         ./result/bin/squire --help
 
-    # Run our go tests within the context of the shell from the flake. This
+    # Run our go tests within the context of the dev shell from the flake. This
     # will ensure we have all our dependencies.
     - name: test
-      run: nix shell -c go test -p 1 ./...
+      run: nix develop -c go test -p 1 ./...
