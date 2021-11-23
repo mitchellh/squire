@@ -14,7 +14,7 @@ RUN cmake -DCMAKE_PREFIX_PATH=/usr/lib/postgresql14/ .; \
     make install;
 
 #--------------------------------------------------------------------
-# builder builds the Waypoint binaries
+# builder builds the Squire binaries
 #--------------------------------------------------------------------
 
 FROM golang:1.17-alpine AS builder
