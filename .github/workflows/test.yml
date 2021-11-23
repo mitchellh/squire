@@ -16,6 +16,12 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
 
     # Test our full build first, this will catch any syntax errors right away.
-    - run: |
+    - name: build and run
+      run: |
         nix build .
-        ./result/bin/squire
+        ./result/bin/squire --help
+
+    # Run our go tests within the context of the shell from the flake. This
+    # will ensure we have all our dependencies.
+    - name: test
+      run: nix shell -c go test -p 1 ./...
