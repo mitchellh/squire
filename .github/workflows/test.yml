@@ -15,4 +15,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
 
-    - run: nix build .
+    # Test our full build first, this will catch any syntax errors right away.
+    - run: |
+        nix build .
+        ./result/bin/squire
