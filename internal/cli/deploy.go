@@ -3,12 +3,15 @@ package cli
 import (
 	"bytes"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/cockroachdb/errors"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/posener/complete"
 
+	"github.com/mitchellh/squire/internal/dbcontainer"
 	"github.com/mitchellh/squire/internal/pkg/flag"
 	"github.com/mitchellh/squire/internal/squire"
 )
@@ -53,7 +56,17 @@ func (c *DeployCommand) Run(args []string) int {
 			return c.exitError(err)
 		}
 
-		// TODO: verify up
+		st, err := ctr.Status(ctx)
+		if err != nil {
+			return c.exitError(err)
+		}
+
+		if st.State != dbcontainer.Running {
+			return c.exitError(errors.WithDetail(
+				errors.New("database container is not running"),
+				strings.TrimSpace(errDetailDeployNotRunning),
+			))
+		}
 
 		targetURI = ctr.ConnURI()
 	}
@@ -163,3 +176,12 @@ Usage: squire deploy [options]
 
 ` + c.Flags().Help())
 }
+
+const (
+	errDetailDeployNotRunning = `
+"squire deploy" was invoked to target the development container, but
+the database container is not running. Please run "squire up" to start
+the container. If you meant to target production, you must specify the
+"-production" flag.
+`
+)
