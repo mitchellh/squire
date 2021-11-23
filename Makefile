@@ -11,3 +11,7 @@ bin/squire: # bin creates the binaries and installs them
 				-ldflags $(GOLDFLAGS) \
 				-o ./bin/squire ./cmd/squire
 	cp ./bin/squire $(GOPATH)/bin/squire
+
+.PHONY: docker
+docker:
+	DOCKER_BUILDKIT=1 docker build . -t squire:dev
