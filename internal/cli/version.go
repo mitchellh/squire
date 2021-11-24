@@ -32,7 +32,7 @@ func (c *VersionCommand) Run(args []string) int {
 	}
 	if errors.Is(err, exec.ErrNotFound) {
 		err = nil
-		colorError.Println(strings.TrimSpace(errDetailNoPSQL))
+		colorError.Println(strings.TrimSpace(errDetailNoPSQL) + "\n")
 	}
 	if err != nil {
 		colorError.Printf("Error looking for psql: %s\n", err)
