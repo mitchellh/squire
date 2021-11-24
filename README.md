@@ -15,6 +15,32 @@ work to the source, there isn't anything strictly required in version 13
 that we need, I just didn't need earlier versions. Contributions are welcome
 to support earlier versions.
 
+## Installation
+
+Download the [latest release](https://github.com/mitchellh/squire/releases)
+for your platform and install `squire ` to [your PATH](https://superuser.com/questions/488173/how-can-i-edit-the-path-on-linux). Verify squire is installed:
+
+```
+$ squire --version
+squire v0.1.1 (ca3a7e2)
+
+Squire dependency information:
+✓ psql      (path: /usr/local/bin/psql)
+✓ pgquarrel (path: /usr/local/bin/pgquarrel)
+```
+
+**Squire has two runtime dependencies that you must manually install:**
+
+  * `psql` - The `squire console` command requires this. If you don't plan
+    on using `squire console`, then you don't need to install this. This
+    is typically installed with PostgreSQL, so install PostgreSQL for your
+    system.
+
+  * [`pgquarrel`](https://github.com/eulerto/pgquarrel) - This is used for
+    `squire diff` and `squire deploy`. Unfortunately at the time of writing,
+    there aren't many packages for this available, so you may have to manually
+    compile and install this for your platform.
+
 ## Usage
 
 For new projects, start by creating a `sql` directory with the structure
