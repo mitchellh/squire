@@ -66,7 +66,7 @@ func (c *URLCommand) AutocompleteFlags() complete.Flags {
 }
 
 func (c *URLCommand) Synopsis() string {
-	return "Start PostgreSQL database container"
+	return "Output connection URL to the database"
 }
 
 func (c *URLCommand) Help() string {

@@ -67,7 +67,7 @@ func (c *VersionCommand) AutocompleteFlags() complete.Flags {
 }
 
 func (c *VersionCommand) Synopsis() string {
-	return "Prints the version"
+	return "Prints the version and environment information"
 }
 
 func (c *VersionCommand) Help() string {
