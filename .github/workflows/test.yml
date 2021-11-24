@@ -19,7 +19,7 @@ jobs:
     - name: build and run
       run: |
         nix build .
-        ./result/bin/squire --help
+        ./result/bin/squire --version
 
     # Run our go tests within the context of the dev shell from the flake. This
     # will ensure we have all our dependencies.
