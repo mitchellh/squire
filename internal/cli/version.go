@@ -1,7 +1,10 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/posener/complete"
 
@@ -15,7 +18,38 @@ type VersionCommand struct {
 
 func (c *VersionCommand) Run(args []string) int {
 	out := version.Info().String()
-	fmt.Printf("%s %s", cliName, out)
+	fmt.Printf("%s %s\n\n", cliName, out)
+
+	// We also perform some basic doctoring here to make notes about our
+	// environment. This is helpful to determine how squire will behave.
+
+	fmt.Printf("Squire dependency information:\n")
+
+	// psql
+	psql, err := exec.LookPath("psql")
+	if err == nil {
+		fmt.Printf("✓ psql      (path: %s)\n", psql)
+	}
+	if errors.Is(err, exec.ErrNotFound) {
+		err = nil
+		colorError.Println(strings.TrimSpace(errDetailNoPSQL))
+	}
+	if err != nil {
+		colorError.Printf("Error looking for psql: %s\n", err)
+	}
+
+	// pgquarre
+	pgq, err := exec.LookPath("pgquarrel")
+	if err == nil {
+		fmt.Printf("✓ pgquarrel (path: %s)\n", pgq)
+	}
+	if errors.Is(err, exec.ErrNotFound) {
+		err = nil
+		colorError.Println(strings.TrimSpace(errDetailNoPGQuarrel))
+	}
+	if err != nil {
+		colorError.Printf("Error looking for pgquarrel: %s\n", err)
+	}
 
 	return 0
 }
@@ -44,3 +78,15 @@ Usage: squire version
 
 `)
 }
+
+const (
+	errDetailNoPSQL = `
+psql could not be found. The "squire console" command will not work, but
+other Squire commands should remain functional.
+`
+
+	errDetailNoPGQuarrel = `
+pgquarrel could not be found. "squire diff" and "squire deploy" will not
+work, but other Squire commands should remain functional.
+`
+)
