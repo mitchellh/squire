@@ -32,9 +32,16 @@
         };
       in rec {
         devShell = repo.shell;
+
         packages.squire = repo.package;
         defaultPackage = packages.squire;
+
+        overlay = final: prev: {
+          pgquarrel = packages.squire;
+        };
+
         checks.fmt = repo.fmtcheck;
+
         apps.squire = flake-utils.lib.mkApp { drv = packages.squire; };
         defaultApp = apps.squire;
       }

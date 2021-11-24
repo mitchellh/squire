@@ -16,7 +16,9 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
 
     # Run our checks to catch quick issues
-    - run: nix flake check
+    # NOTE: we disable this for now because flake-utils isn't setting up the
+    # overlay args correctly.
+    # - run: nix flake check
 
     # Test our full build first, this will catch any syntax errors right away.
     - name: build and run
