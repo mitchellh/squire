@@ -37,7 +37,7 @@
         defaultPackage = packages.squire;
 
         overlay = final: prev: {
-          pgquarrel = packages.squire;
+          squire = packages.squire;
         };
 
         checks.fmt = repo.fmtcheck;
