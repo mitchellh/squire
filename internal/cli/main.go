@@ -91,12 +91,6 @@ func Commands(
 
 	// start building our commands
 	commands := map[string]cli.CommandFactory{
-		"init": func() (cli.Command, error) {
-			return &InitCommand{
-				baseCommand: baseCommand,
-			}, nil
-		},
-
 		"config": func() (cli.Command, error) {
 			return &ConfigCommand{
 				baseCommand: baseCommand,
