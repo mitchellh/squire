@@ -124,6 +124,10 @@ to find the error.
   Line:   %[1]d
   Column: %[2]d
 
+IMPORTANT: the line and column above does not refer to your single SQL files,
+it typically refers to the compiled schema. Squire saves the full compiled
+schema to your sql dir named "schema.sql". Please check that file.
+
 For extra information, the full PostgreSQL error structure is shown below:
 
 %[3]s
