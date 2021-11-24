@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"io"
 	"io/ioutil"
+
+	"github.com/cockroachdb/errors"
+	"github.com/jackc/pgconn"
 )
 
 type DeployOptions struct {
@@ -45,7 +49,28 @@ func (s *Squire) Deploy(ctx context.Context, opts *DeployOptions) error {
 	// Execute it.
 	_, err = db.ExecContext(ctx, string(sqlbs))
 	if err != nil {
-		return err
+		L.Error("error executing SQL", "err", err)
+
+		// If this isn't a pgconn error then just return
+		pgerr := &pgconn.PgError{}
+		if !errors.As(err, &pgerr) {
+			return err
+		}
+
+		// JSON-encode the error for now so we provide all information.
+		// In the future, I want to be able to show a helpful pointer to
+		// a specific context in the schema.
+		human, encodeErr := json.MarshalIndent(&pgerr, "", "\t")
+		if encodeErr != nil {
+			// If we failed to encode, just return the original error.
+			return err
+		}
+
+		// If it is a pgconn error, we want to make the output more helpful.
+		return errors.Mark(errors.WithDetailf(
+			errors.New(err.Error()),
+			"%s", string(human),
+		), err)
 	}
 
 	return nil

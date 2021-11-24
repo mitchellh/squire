@@ -3,8 +3,10 @@ package squire
 import (
 	"bytes"
 	"context"
+	"strings"
 	"testing"
 
+	"github.com/cockroachdb/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mitchellh/squire/internal/config"
@@ -46,6 +48,20 @@ func TestDeploy(t *testing.T) {
 		SQL:    &buf,
 		Target: db,
 	}))
+
+	// Try invalid SQL so that we can verify our error message
+	// has useful contents.
+	err = sq.Deploy(ctx, &DeployOptions{
+		SQL: strings.NewReader(strings.TrimSpace(`
+CREATE TABLE accounts (
+  id         SERIAL PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+);
+`)),
+		Target: db,
+	})
+	require.Error(err)
+	require.Contains(errors.FlattenDetails(err), "Position")
 
 	// Test a clean reset
 	require.NoError(sq.Reset(ctx, &ResetOptions{
