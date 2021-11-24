@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	"github.com/cockroachdb/errors"
 	"github.com/jackc/pgconn"
@@ -66,12 +67,65 @@ func (s *Squire) Deploy(ctx context.Context, opts *DeployOptions) error {
 			return err
 		}
 
+		// Try to find the column/line.
+		// NOTE(mitchellh): In the future, we should show a clang-style
+		// context so we show the SQL directly within the error message.
+		line, col := positionToLineCol(sqlbs, pgerr.Position)
+
 		// If it is a pgconn error, we want to make the output more helpful.
 		return errors.Mark(errors.WithDetailf(
 			errors.New(err.Error()),
-			"%s", string(human),
+			strings.TrimSpace(errDetailSqlExec),
+			line, col, string(human),
 		), err)
 	}
 
 	return nil
 }
+
+// positionToLineCol converts a position in character count (not byte count)
+// as reported by a PostgreSQL error to a line/column for friendlier
+// human output.
+func positionToLineCol(src []byte, pos int32) (int, int) {
+	line := 1
+	col := 0
+
+	// Go ranges over characters
+	for i, c := range string(src) {
+		// If we hit a newline, reset our counters
+		if c == '\n' {
+			line++
+			col = 0
+			continue
+		}
+
+		// Inc our column count
+		col++
+
+		// If we haven't reached the position yet, continue.
+		if i < int(pos) {
+			continue
+		}
+
+		// We found it!
+		return line, col
+	}
+
+	// Never found, should not happen.
+	return 0, 0
+}
+
+const (
+	errDetailSqlExec = `
+There was an error while executing SQL. The error happened around the
+line and column shown below. Please see the schema.sql in your sql directory
+to find the error.
+
+  Line:   %[1]d
+  Column: %[2]d
+
+For extra information, the full PostgreSQL error structure is shown below:
+
+%[3]s
+`
+)

@@ -52,12 +52,12 @@ func TestDeploy(t *testing.T) {
 	// Try invalid SQL so that we can verify our error message
 	// has useful contents.
 	err = sq.Deploy(ctx, &DeployOptions{
-		SQL: strings.NewReader(strings.TrimSpace(`
+		SQL: strings.NewReader(`
 CREATE TABLE accounts (
   id         SERIAL PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
 );
-`)),
+`),
 		Target: db,
 	})
 	require.Error(err)
