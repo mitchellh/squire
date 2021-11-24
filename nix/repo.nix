@@ -9,7 +9,7 @@ in rec {
       pkgs.go_1_17
       pkgs.goreleaser
       pkgs.docker-compose
-      pkgs.postgresql_13
+      pkgs.postgresql_14
       pkgs.pgquarrel
     ];
   };
@@ -22,6 +22,25 @@ in rec {
     # This has to be updated each time the go.mod changes. Running a
     # nix build . should tell you this is wrong.
     vendorSha256 = "sha256-IxzjrTM9XFCFGyqGzy1IpIdGnA7elU4FzIcrC+G/l5c=";
+
+    # There is no real reason to run the tests cause it only runs the
+    # cmd/squire tests which do nothing except validate compilation. And
+    # the full unit tests won't pass without devShell dependencies.
+    doCheck = false;
+
+    # We need wrapProgram
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+
+    # Add dependent binaries to our PATH
+    #
+    # NOTE: we purposely prefix pgquarrel and suffix psql. It is more likely
+    # that the user has a psql they want to use, so we prefer to use that.
+    # However, pgquarrel we prefer to run our version.
+    postInstall = ''
+      wrapProgram "$out/bin/squire" \
+        --prefix PATH : "${pkgs.pgquarrel}/bin" \
+        --suffix PATH : "${pkgs.postgresql_14}/bin"
+    '';
   };
 
   # fmtcheck verifies that our Go files are all formatted.
