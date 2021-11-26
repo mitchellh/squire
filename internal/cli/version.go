@@ -38,7 +38,20 @@ func (c *VersionCommand) Run(args []string) int {
 		colorError.Printf("Error looking for psql: %s\n", err)
 	}
 
-	// pgquarre
+	// pg_dump
+	pgd, err := exec.LookPath("pg_dump")
+	if err == nil {
+		fmt.Printf("✓ pg_dump   (path: %s)\n", pgd)
+	}
+	if errors.Is(err, exec.ErrNotFound) {
+		err = nil
+		colorError.Println(strings.TrimSpace(errDetailNoPGDump) + "\n")
+	}
+	if err != nil {
+		colorError.Printf("Error looking for pg_dump: %s\n", err)
+	}
+
+	// pgquarrel
 	pgq, err := exec.LookPath("pgquarrel")
 	if err == nil {
 		fmt.Printf("✓ pgquarrel (path: %s)\n", pgq)
@@ -83,6 +96,11 @@ const (
 	errDetailNoPSQL = `
 psql could not be found. The "squire console" command will not work, but
 other Squire commands should remain functional.
+`
+
+	errDetailNoPGDump = `
+pg_dump could not be found. This is used by "squire diff" as an optional
+verification mechanism. It is highly recommended you have pg_dump available.
 `
 
 	errDetailNoPGQuarrel = `
