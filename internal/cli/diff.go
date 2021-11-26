@@ -97,5 +97,10 @@ Usage: squire diff [options]
   the deployed schema in the development container from "squire up". In this
   case, the development container must be up and running.
 
+  WARNING: The diff is not perfect and does not support all PostgreSQL
+  functionality. All common operations are fully supported but there are
+  various edges of PostgreSQL that aren't covered. Always manually verify
+  diffs.
+
 ` + c.Flags().Help())
 }
