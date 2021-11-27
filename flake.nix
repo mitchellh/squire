@@ -5,7 +5,8 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
 
-    nix-pgquarrel.url = "github:mitchellh/nix-pgquarrel";
+    #nix-pgquarrel.url = "github:mitchellh/nix-pgquarrel";
+    nix-pgquarrel.url = "github:mitchellh/pgquarrel";
     nix-pgquarrel.inputs.nixpkgs.follows = "nixpkgs";
   };
 

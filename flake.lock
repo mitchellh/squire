@@ -17,11 +17,11 @@
     },
     "flake-utils_2": {
       "locked": {
-        "lastModified": 1634851050,
-        "narHash": "sha256-N83GlSGPJJdcqhUxSCS/WwW5pksYf3VP1M13cDRTSVA=",
+        "lastModified": 1637014545,
+        "narHash": "sha256-26IZAc5yzlD9FlDT54io1oqG/bBoyka+FJk5guaX4x4=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "c91f3de5adaf1de973b797ef7485e441a65b8935",
+        "rev": "bba5dcc8e0b20ab664967ad83d24d64cb64ec4f4",
         "type": "github"
       },
       "original": {
@@ -38,16 +38,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1636500939,
-        "narHash": "sha256-d3Q0u6lgAbjm1VUzn5AfMTE7F2mB5eHa7uV15+1mvUI=",
+        "lastModified": 1638037241,
+        "narHash": "sha256-mxVUaVg5GKP6FFkTaP2tyX0EbI+JBdkorCXy8SJBg5E=",
         "owner": "mitchellh",
-        "repo": "nix-pgquarrel",
-        "rev": "2ee742eb7b9b8c8180ec593ab674a1cc61aa62b8",
+        "repo": "pgquarrel",
+        "rev": "84b05d393f7ca141a3d13d577582a2c470070c39",
         "type": "github"
       },
       "original": {
         "owner": "mitchellh",
-        "repo": "nix-pgquarrel",
+        "repo": "pgquarrel",
         "type": "github"
       }
     },

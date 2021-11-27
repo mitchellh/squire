@@ -1,11 +1,11 @@
 CREATE TABLE accounts (
-  id         SERIAL PRIMARY KEY,
+  id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 COMMENT ON TABLE accounts IS 'All user accounts';
 
 CREATE TABLE organizations (
-  id         SERIAL PRIMARY KEY,
+  id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
 
   -- every organization has a single account that owns it.
