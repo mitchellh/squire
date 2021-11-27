@@ -11,7 +11,7 @@ var (
 
 	// Version information. This can be manually set or filled in via
 	// compiler flags.
-	Version = "0.1.0"
+	Version = "0.1.2"
 
 	// This will be initialized by the package.
 	info *VersionInfo

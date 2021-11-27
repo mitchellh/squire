@@ -1,5 +1,12 @@
 { pkgs }: let
   src = ./..;
+
+  # Get our version by reading the value in internal/version
+  version = builtins.readFile(pkgs.runCommand "get-version" {} ''
+    grep 'Version = "' ${src}/internal/version/version.go | \
+      awk -F '( |\t)+' '{print $4}' | \
+      tr -d '\n"' > $out
+  '');
 in rec {
   shell = pkgs.mkShell rec {
     name = "squire";
@@ -15,6 +22,7 @@ in rec {
   };
 
   package = pkgs.buildGoModule {
+    inherit version;
     name = "squire";
     src = ./..;
     subPackages = [ "cmd/squire" ];
