@@ -46,6 +46,9 @@ type DiffOptions struct {
 	// Verify verifies that the diff is complete by dumping the target
 	// database, applying the diff, and then dumping againt to verify
 	// it is equivalent to a reset dump.
+	//
+	// BUG(mitchellh): This doesn't currently work because pg_dump
+	// isn't fully reliable. I kept the code around because it has promise.
 	Verify bool
 }
 
@@ -174,13 +177,28 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 	// 2. Reset using the dump in our temp container
 	// 3. Apply the diff we generated
 	// 4. Dump the final DB from our temp container
+	// 5. Reset the temp container to our full schema
+	// 6. Dump the full schema
 	// 5. Compare dumps
 
-	L.Info("verification requested, dumping target database")
-	var dump bytes.Buffer
+	L.Info("verification requested, starting")
+	L.Debug("dumping source database (full schema)")
+	var dumpExpected bytes.Buffer
+	if err := s.Dump(ctx, &DumpOptions{
+		TargetURI: source.ConnURI(),
+		Output:    &dumpExpected,
+	}); err != nil {
+		return errors.WithDetail(
+			errors.Newf("error dumping source database: %w", err),
+			strings.TrimSpace(errDiffDumpSource),
+		)
+	}
+
+	L.Debug("dumping target database to use for reset")
+	var dumpActual bytes.Buffer
 	if err := s.Dump(ctx, &DumpOptions{
 		TargetURI: targetURI,
-		Output:    &dump,
+		Output:    &dumpActual,
 	}); err != nil {
 		return errors.WithDetail(
 			errors.Newf("error dumping target database: %w", err),
@@ -192,7 +210,7 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 	L.Debug("resetting the source container with our target dump")
 	if err := s.Reset(ctx, &ResetOptions{
 		Container: source,
-		Schema:    bytes.NewReader(dump.Bytes()),
+		Schema:    bytes.NewReader(dumpActual.Bytes()),
 	}); err != nil {
 		return errors.WithDetail(
 			errors.Newf("error applying schema to source container: %w", err),
@@ -201,22 +219,26 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 	}
 
 	// Apply the diff
-	L.Debug("applying the diff to the target database")
-	if err := s.Deploy(ctx, &DeployOptions{
-		SQL:       bytes.NewReader(diff.Bytes()),
-		TargetURI: source.ConnURI(),
-	}); err != nil {
-		return errors.WithDetail(
-			errors.Newf("error verifying diff: %w", err),
-			strings.TrimSpace(errDiffVerifyApply),
-		)
+	if diff.Len() > 0 {
+		L.Debug("applying the diff to the target database")
+		if err := s.Deploy(ctx, &DeployOptions{
+			SQL:       bytes.NewReader(diff.Bytes()),
+			TargetURI: source.ConnURI(),
+		}); err != nil {
+			return errors.WithDetail(
+				errors.Newf("error verifying diff: %w", err),
+				strings.TrimSpace(errDiffVerifyApply),
+			)
+		}
+	} else {
+		L.Debug("verification with empty diff")
 	}
 
 	// Dump the temporary database again
-	var dump2 bytes.Buffer
+	dumpActual.Reset()
 	if err := s.Dump(ctx, &DumpOptions{
 		TargetURI: source.ConnURI(),
-		Output:    &dump2,
+		Output:    &dumpActual,
 	}); err != nil {
 		return errors.WithDetail(
 			errors.Newf("error dumping verification database: %w", err),
@@ -225,17 +247,24 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 	}
 
 	// Compare the diffs
+	L.Debug("diffing the two dumps")
+	if err := s.diffDumps(dumpExpected.Bytes(), dumpActual.Bytes()); err != nil {
+		return err
+	}
 
+	L.Info("verification passed")
 	return nil
 }
 
 // diffDumps diffs the two dumps. If they do not match, an error is returned
 // which contains a text diff.
-func (s *Squire) diffDumps(a, b io.Reader) error {
+//
+// BUG(mitchellh): This doesn't work because pg_dump is not reliable.
+func (s *Squire) diffDumps(a, b []byte) error {
 	var linesA, linesB []string
 
 	// Read lines of A
-	scanner := bufio.NewScanner(a)
+	scanner := bufio.NewScanner(bytes.NewReader(a))
 	for scanner.Scan() {
 		linesA = append(linesA, scanner.Text())
 	}
@@ -244,7 +273,7 @@ func (s *Squire) diffDumps(a, b io.Reader) error {
 	}
 
 	// Read lines of B
-	scanner = bufio.NewScanner(b)
+	scanner = bufio.NewScanner(bytes.NewReader(b))
 	for scanner.Scan() {
 		linesB = append(linesB, scanner.Text())
 	}
@@ -262,11 +291,10 @@ func (s *Squire) diffDumps(a, b io.Reader) error {
 	}
 
 	// Not equal, create a diff.
-	// TODO: this is a diff of the sort strings which is wrong.
-	aString := strings.Join(linesA, "\n")
-	bString := strings.Join(linesB, "\n")
-	edits := myers.ComputeEdits(span.URIFromPath("a.sql"), aString, bString)
-	diff := fmt.Sprint(gotextdiff.ToUnified("a.sql", "b.sql", aString, edits))
+	aString := string(a)
+	bString := string(b)
+	edits := myers.ComputeEdits(span.URIFromPath("expected.sql"), aString, bString)
+	diff := fmt.Sprint(gotextdiff.ToUnified("expected.sql", "actual.sql", aString, edits))
 
 	return errors.WithDetailf(
 		errors.New("verification failed, schema after apply does not match"),
