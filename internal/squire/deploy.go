@@ -8,7 +8,9 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/cockroachdb/errors"
 	"github.com/jackc/pgconn"
 )
@@ -22,13 +24,17 @@ type DeployOptions struct {
 
 	// Target is the target to apply the SQL to. For dev this could be
 	// a local container, for production it could be a real remote connection.
+	// If this is set, it takes priority over TargetURI.
 	Target *sql.DB
+
+	// TargetURI is the target to apply to the SQL to. This is used if
+	// the Target is NOT set.
+	TargetURI string
 }
 
 // Deploy applies the given SQL to the target database instance.
 func (s *Squire) Deploy(ctx context.Context, opts *DeployOptions) error {
 	L := s.logger.Named("deploy")
-	db := opts.Target
 
 	if opts.SQL == nil {
 		L.Info("schema not given, generating")
@@ -40,6 +46,31 @@ func (s *Squire) Deploy(ctx context.Context, opts *DeployOptions) error {
 
 		opts.SQL = &buf
 	}
+
+	if opts.Target == nil && opts.TargetURI != "" {
+		L.Info("connecting to the DB")
+		db, err := sql.Open("pgx", opts.TargetURI)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+
+		// Wait for the connection to become ready
+		err = backoff.Retry(func() error {
+			return db.Ping()
+		}, backoff.WithContext(
+			backoff.NewConstantBackOff(15*time.Millisecond),
+			ctx,
+		))
+		if err != nil {
+			db.Close()
+			return err
+		}
+
+		opts.Target = db
+	}
+
+	db := opts.Target
 
 	// Load the SQL into memory.
 	sqlbs, err := ioutil.ReadAll(opts.SQL)

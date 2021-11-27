@@ -1,16 +1,23 @@
 package squire
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"reflect"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/hexops/gotextdiff"
+	"github.com/hexops/gotextdiff/myers"
+	"github.com/hexops/gotextdiff/span"
 
 	"github.com/mitchellh/squire/internal/dbcontainer"
 	"github.com/mitchellh/squire/internal/pkg/stdcapture"
@@ -35,6 +42,11 @@ type DiffOptions struct {
 
 	// Verbose will output debug information from the diff invocation.
 	Verbose bool
+
+	// Verify verifies that the diff is complete by dumping the target
+	// database, applying the diff, and then dumping againt to verify
+	// it is equivalent to a reset dump.
+	Verify bool
 }
 
 // Diff creates a diff between two database instances.
@@ -135,12 +147,132 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 		args = append(args, "-vv")
 	}
 
+	// Write to our output, but if we're verifying we also need to store the diff.
+	var diff bytes.Buffer
+	output := opts.Output
+	if opts.Verify {
+		output = io.MultiWriter(output, &diff)
+	}
+
 	// Run pgquarrel
 	cmd := exec.CommandContext(ctx, pgqPath, args...)
-	cmd.Stdout = opts.Output
+	cmd.Stdout = output
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// If we're not verifying, we're done
+	if !opts.Verify {
+		L.Debug("no verify, diff complete")
+		return nil
+	}
+
+	// For verification, we do the following:
+	// 1. Dump the target DB
+	// 2. Reset using the dump in our temp container
+	// 3. Apply the diff we generated
+	// 4. Dump the final DB from our temp container
+	// 5. Compare dumps
+
+	L.Info("verification requested, dumping target database")
+	var dump bytes.Buffer
+	if err := s.Dump(ctx, &DumpOptions{
+		TargetURI: targetURI,
+		Output:    &dump,
+	}); err != nil {
+		return errors.WithDetail(
+			errors.Newf("error dumping target database: %w", err),
+			strings.TrimSpace(errDiffDump),
+		)
+	}
+
+	// Reset our temporary DB with the dump
+	L.Debug("resetting the source container with our target dump")
+	if err := s.Reset(ctx, &ResetOptions{
+		Container: source,
+		Schema:    bytes.NewReader(dump.Bytes()),
+	}); err != nil {
+		return errors.WithDetail(
+			errors.Newf("error applying schema to source container: %w", err),
+			strings.TrimSpace(errCreatingSource),
+		)
+	}
+
+	// Apply the diff
+	L.Debug("applying the diff to the target database")
+	if err := s.Deploy(ctx, &DeployOptions{
+		SQL:       bytes.NewReader(diff.Bytes()),
+		TargetURI: source.ConnURI(),
+	}); err != nil {
+		return errors.WithDetail(
+			errors.Newf("error verifying diff: %w", err),
+			strings.TrimSpace(errDiffVerifyApply),
+		)
+	}
+
+	// Dump the temporary database again
+	var dump2 bytes.Buffer
+	if err := s.Dump(ctx, &DumpOptions{
+		TargetURI: source.ConnURI(),
+		Output:    &dump2,
+	}); err != nil {
+		return errors.WithDetail(
+			errors.Newf("error dumping verification database: %w", err),
+			strings.TrimSpace(errDiffDumpSource),
+		)
+	}
+
+	// Compare the diffs
+
+	return nil
+}
+
+// diffDumps diffs the two dumps. If they do not match, an error is returned
+// which contains a text diff.
+func (s *Squire) diffDumps(a, b io.Reader) error {
+	var linesA, linesB []string
+
+	// Read lines of A
+	scanner := bufio.NewScanner(a)
+	for scanner.Scan() {
+		linesA = append(linesA, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	// Read lines of B
+	scanner = bufio.NewScanner(b)
+	for scanner.Scan() {
+		linesB = append(linesB, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	// Sort the lines
+	sort.Strings(linesA)
+	sort.Strings(linesB)
+
+	// We just use reflect.DeepEqual since its a basic []string.
+	if reflect.DeepEqual(linesA, linesB) {
+		return nil
+	}
+
+	// Not equal, create a diff.
+	// TODO: this is a diff of the sort strings which is wrong.
+	aString := strings.Join(linesA, "\n")
+	bString := strings.Join(linesB, "\n")
+	edits := myers.ComputeEdits(span.URIFromPath("a.sql"), aString, bString)
+	diff := fmt.Sprint(gotextdiff.ToUnified("a.sql", "b.sql", aString, edits))
+
+	return errors.WithDetailf(
+		errors.New("verification failed, schema after apply does not match"),
+		strings.TrimSpace(errDiffVerificationFail),
+		diff,
+	)
 }
 
 const (
@@ -169,5 +301,47 @@ The program "pgquarrel" could not be found. pgquarrel is required for diffing
 schemas. Please install pgquarrel prior to continuing.
 
 https://github.com/eulerto/pgquarrel
+`
+
+	errDiffDump = `
+Error while dumping the target database. Squire dumps the target database
+during diffing as a verification mechanism to ensure the diff is complete.
+It is possible to ignore this error by disabling verification ("-verify=false"
+on the "squire diff" command), but it is typically prudent to check the error
+and run verification.
+`
+
+	errDiffDumpSource = `
+Error while dumping the verification database. Squire dumps the verification
+database to test that the generated diff would result in an equivalent schema.
+It is possible to ignore this error by disabling verification ("-verify=false"
+on the "squire diff" command), but it is typically prudent to check the error
+and run verification.
+`
+
+	errDiffVerifyApply = `
+Error while testing the generated diff on a dump of the target database.
+This usually means that attempting to deploy the diff on the real target
+database would fail. Inspect the error above to determine next steps.
+`
+
+	errDiffVerificationFail = `
+Verification failed! During verification, Squire copies the schema of the
+target database, applies the diff, and then verifies that the resulting schema
+is equivalent to a full reset. It should be if the diff is correct. If the diff
+is incorrect, the schemas will be unequal. Unfortunately, verification produced
+an unequal schema.
+
+This can occur because the underlying tool used for generating diffs (pgquarrel)
+does not support all features of SQL, or due to bugs.
+
+The full diff of the schemas is shown below. Note that this is NOT an applyable
+diff, this is a text-based schema dump diff; Squire cannot construct the
+runnable SQL to reach the valid result.
+
+The resolution to this error is usually to manually apply a small subset of
+the full diff that isn't supported by Squire.
+
+%s
 `
 )

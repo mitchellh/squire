@@ -12,6 +12,8 @@ require (
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/fatih/color v1.13.0
 	github.com/hashicorp/go-hclog v1.0.0
+	github.com/hexops/gotextdiff v1.0.3
+	github.com/jackc/pgconn v1.10.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jedib0t/go-pretty/v6 v6.2.4
 	github.com/kr/text v0.2.0
@@ -81,7 +83,6 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.10.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
