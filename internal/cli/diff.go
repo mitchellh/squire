@@ -11,6 +11,7 @@ type DiffCommand struct {
 	*baseCommand
 
 	production bool
+	verifyDump bool
 }
 
 func (c *DiffCommand) Run(args []string) int {
@@ -46,6 +47,8 @@ func (c *DiffCommand) Run(args []string) int {
 
 		// Output verbose info if we have any verbosity set on our logger.
 		Verbose: c.Log.IsDebug(),
+
+		Verify: c.verifyDump,
 	})
 	if err != nil {
 		return c.exitError(err)
@@ -64,6 +67,15 @@ func (c *DiffCommand) Flags() *flag.Sets {
 			Default: false,
 			Usage:   "Diff against the production database.",
 			Aliases: []string{"p"},
+		})
+
+		f.BoolVar(&flag.BoolVar{
+			Name:    "verify-dump",
+			Target:  &c.verifyDump,
+			Default: false,
+			Usage: "Test the diff against a pg_dump clone to verify that " +
+				"it produces the expected schema. This isn't 100% accurate and " +
+				"so it is disabled by default. Scrutinize any pass/fail results.",
 		})
 	})
 }

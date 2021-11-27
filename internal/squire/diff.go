@@ -45,10 +45,8 @@ type DiffOptions struct {
 
 	// Verify verifies that the diff is complete by dumping the target
 	// database, applying the diff, and then dumping againt to verify
-	// it is equivalent to a reset dump.
-	//
-	// BUG(mitchellh): This doesn't currently work because pg_dump
-	// isn't fully reliable. I kept the code around because it has promise.
+	// it is equivalent to a reset dump. This isn't fully reliable, but
+	// can be used as an additional check.
 	Verify bool
 }
 
@@ -259,25 +257,41 @@ func (s *Squire) Diff(ctx context.Context, opts *DiffOptions) error {
 // diffDumps diffs the two dumps. If they do not match, an error is returned
 // which contains a text diff.
 //
-// BUG(mitchellh): This doesn't work because pg_dump is not reliable.
+// This is NOT exact and false positives AND negatives can exist. pg_dump
+// is non-deterministic and the way pgquarrel creates a diff can create differing
+// dumps even if the schema is functionally equivalent. Despite this, dump
+// diffing provides an extra layer of check.
 func (s *Squire) diffDumps(a, b []byte) error {
-	var linesA, linesB []string
+	// buildLines breaks up our dump into individual lines. Empty lines
+	// and comments are stripped.
+	buildLines := func(v []byte) ([]string, error) {
+		var result []string
 
-	// Read lines of A
-	scanner := bufio.NewScanner(bytes.NewReader(a))
-	for scanner.Scan() {
-		linesA = append(linesA, scanner.Text())
+		scanner := bufio.NewScanner(bytes.NewReader(v))
+		for scanner.Scan() {
+			txt := strings.TrimSpace(scanner.Text())
+
+			// Ignore blank and comments
+			if txt == "" || strings.HasPrefix(txt, "--") {
+				continue
+			}
+
+			// Trim trailing commas so that orders in CREATE blocks don't matter
+			txt = strings.TrimRight(txt, ",")
+
+			result = append(result, txt)
+		}
+
+		return result, scanner.Err()
 	}
-	if err := scanner.Err(); err != nil {
+
+	// Get our lines
+	linesA, err := buildLines(a)
+	if err != nil {
 		return err
 	}
-
-	// Read lines of B
-	scanner = bufio.NewScanner(bytes.NewReader(b))
-	for scanner.Scan() {
-		linesB = append(linesB, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
+	linesB, err := buildLines(b)
+	if err != nil {
 		return err
 	}
 
@@ -356,12 +370,12 @@ database would fail. Inspect the error above to determine next steps.
 	errDiffVerificationFail = `
 Verification failed! During verification, Squire copies the schema of the
 target database, applies the diff, and then verifies that the resulting schema
-is equivalent to a full reset. It should be if the diff is correct. If the diff
-is incorrect, the schemas will be unequal. Unfortunately, verification produced
-an unequal schema.
+is equivalent to a full reset.
 
-This can occur because the underlying tool used for generating diffs (pgquarrel)
-does not support all features of SQL, or due to bugs.
+This process is NOT 100%% accurate. Both false positives and false negatives
+are possible, but it helps to give an extra check during the diff. Always
+scrutinize both the diff and the verification failures to ensure deploy will
+do the correct thing.
 
 The full diff of the schemas is shown below. Note that this is NOT an applyable
 diff, this is a text-based schema dump diff; Squire cannot construct the

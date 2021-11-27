@@ -49,14 +49,11 @@ func TestDiff(t *testing.T) {
 	require.NotEmpty(out.String())
 	t.Logf("output: %s", out.String())
 
-	/*
-			// NOTE: verification is broken currently so disable this
-		out1 := out.String()
+	out1 := out.String()
 
-			// Diff again with verification
-			out.Reset()
-			require.NoError(sq2.Diff(ctx, &DiffOptions{Output: &out, Verify: true}))
-			require.NotEmpty(out.String())
-			require.Equal(out1, out.String())
-	*/
+	// Diff again with verification
+	out.Reset()
+	require.NoError(sq2.Diff(ctx, &DiffOptions{Output: &out, Verify: true}))
+	require.NotEmpty(out.String())
+	require.Equal(out1, out.String())
 }
