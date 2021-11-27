@@ -21,7 +21,7 @@ in rec {
 
     # This has to be updated each time the go.mod changes. Running a
     # nix build . should tell you this is wrong.
-    vendorSha256 = "sha256-IxzjrTM9XFCFGyqGzy1IpIdGnA7elU4FzIcrC+G/l5c=";
+    vendorSha256 = "sha256-L0B44/E0p5FU6ylO/DhoXKsVfOEiUu7snedqc0KQCgc=";
 
     # There is no real reason to run the tests cause it only runs the
     # cmd/squire tests which do nothing except validate compilation. And
