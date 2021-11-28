@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"database/sql"
+	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -21,6 +23,7 @@ type DeployCommand struct {
 
 	force      bool
 	production bool
+	sqlPath    string
 }
 
 func (c *DeployCommand) Run(args []string) int {
@@ -71,6 +74,18 @@ func (c *DeployCommand) Run(args []string) int {
 		targetURI = ctr.ConnURI()
 	}
 
+	// Get our SQL reader. Default nil will use the diff.
+	var sqlR io.Reader
+	if c.sqlPath != "" {
+		f, err := os.Open(c.sqlPath)
+		if err != nil {
+			return c.exitError(err)
+		}
+		defer f.Close()
+
+		sqlR = f
+	}
+
 	// Connect to the database
 	L.Debug("target URI", "uri", targetURI)
 	targetDB, err := sql.Open("pgx", targetURI)
@@ -89,19 +104,23 @@ func (c *DeployCommand) Run(args []string) int {
 	}
 
 	// Run our diff
-	var diff bytes.Buffer
-	L.Debug("starting diff")
-	err = c.Squire.Diff(ctx, &squire.DiffOptions{
-		TargetURI: targetURI,
+	if sqlR == nil {
+		var diff bytes.Buffer
+		L.Debug("starting diff")
+		err = c.Squire.Diff(ctx, &squire.DiffOptions{
+			TargetURI: targetURI,
 
-		// Capture the diff
-		Output: &diff,
+			// Capture the diff
+			Output: &diff,
 
-		// Output verbose info if we have any verbosity set on our logger.
-		Verbose: c.Log.IsDebug(),
-	})
-	if err != nil {
-		return c.exitError(err)
+			// Output verbose info if we have any verbosity set on our logger.
+			Verbose: c.Log.IsDebug(),
+		})
+		if err != nil {
+			return c.exitError(err)
+		}
+
+		sqlR = &diff
 	}
 
 	// Output and verify with user
@@ -114,7 +133,7 @@ func (c *DeployCommand) Run(args []string) int {
 	// Deploy the diff
 	L.Debug("starting deploy")
 	if err := c.Squire.Deploy(ctx, &squire.DeployOptions{
-		SQL:    &diff,
+		SQL:    sqlR,
 		Target: targetDB,
 	}); err != nil {
 		return c.exitError(err)
@@ -143,6 +162,14 @@ func (c *DeployCommand) Flags() *flag.Sets {
 			Usage:   "Deploy to the production database.",
 			Aliases: []string{"p"},
 		})
+
+		f.StringVar(&flag.StringVar{
+			Name:    "sql-path",
+			Target:  &c.sqlPath,
+			Default: "",
+			Usage: "SQL file to run for the deployment. If this isn't specified " +
+				"the results of diff will be run. This can be used or custom migrations.",
+		})
 	})
 }
 
@@ -168,6 +195,10 @@ Usage: squire deploy [options]
   The target database by default is the development container created
   with "squire up". The target database is production if the "-production"
   flag is specified.
+
+  The "-sql-path" flag can be used to specify a custom SQL file to run
+  instead of the "diff" output. This can be used in the case where the "diff"
+  is incorrect or any other manual changes need to be applied.
 
   In development, it is typically faster to use "squire reset" to continously
   delete and reapply the full schema, especially if you don't care about
