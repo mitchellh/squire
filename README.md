@@ -1,5 +1,11 @@
 # Squire - PostgreSQL Database Development Tool
 
+**⚠️ PROJECT ARCHIVED ⚠️**. I archived this project after not working on
+it for a couple years, mostly because I wasn't actively using the tool
+anymore. I used this tool for awhile for various projects and I _really_
+enjoyed the workflow! Feel free to take these ideas as your own, I've
+MIT licensed everything.
+
 Squire is a tool for developing, testing, and deploying PostgreSQL schemas.
 Squire can optionally replace traditional database migration tooling, or
 it can augment it by helping to auto-generate migrations.
